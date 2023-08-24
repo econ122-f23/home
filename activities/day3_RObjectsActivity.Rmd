@@ -1,0 +1,88 @@
+---
+title: "R Objects Activity"
+author: "ECON 122"
+date: "Day 3"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL)
+```
+
+## Objects used in this handout:
+```{r}
+x <- c(8,2,1,3)
+loans <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/CreditData.csv")
+tweets<- read.csv("https://raw.githubusercontent.com/mgelman/data/master/TrumpTweetData.csv")
+x.mat2 <- cbind(x,2*x)
+x.df <- data.frame(x=x,double.x=x*2)
+my.list <- list(myVec=x, myDf=x.df, myString=c("hi","bye"))
+```
+
+### Question 1: data types
+- What data type is `x`? What data type is `loans$Duration.in.month`? 
+- What data type is the vector `c(x, loans$Duration.in.month)`?
+- What data type is the vector `c(x,"NA")`?
+
+### Question 2: subsetting and coercion
+- How can we get an `x` vector with entries 1 and 2 without using the numbers 1 and 2?
+- How can we reverse the order of entries in `x`?
+- What does `which(x < 5)` equal?
+- What does `sum(c(TRUE,FALSE,TRUE,FALSE))` equal?
+- What does `sum(x[c(TRUE,FALSE,TRUE,FALSE)])` equal?
+- What does `sum(x < 5)` equal?
+- What does `sum(x[x < 5])` equal?
+- Why does `dim(x.mat2[1:2,1])` return `NULL` while `dim(x.mat2[1:2,1:2])` returns a dimension?
+
+### Question 3: Data frames 
+```{r}
+str(tweets$text)
+```
+- The data set `TrumpTweetData.csv` contains data collected on about 1500 Trump tweets. The variable `text` contains the text of the selected tweets. After reading data in with `read.csv`, R thinks the `text` variable is a factor. Does this make sense? (e.g. would you treat this as a categorical grouping variable in any analysis?)
+- Use **two methods** to find the `text` of the 180th tweet in the Trump data.
+- What is the class of the `attributes` of the data frame `tweets`?
+
+
+### Question 4: Lists
+- Using `my.list`, show three ways to write one command that gives the 3rd entry of variable `x` in data frame `myDf`
+- What class of object does the command `my.list[3]` return?
+- What class of object does the command `my.list[[3]]` return?
+- What class of object does the command `unlist(my.list)` return? Why are all the entries `character`s?
+
+### Question 5: Loans revisited
+- Give meaning to the following statistical summaries of the loans data from the test-assignment (interpret the numbers given!):
+    - `mean(loans$Good.Loan == "BadLoan")` 
+    - `mean(loans$Duration.in.month <= 24)`
+    - `mean(loans$Duration.in.month[loans$Good.Loan == "BadLoan"] <= 24)`
+- Explain what the following `ifelse` command produces.
+```{r}
+loans$pred.Default1 <- ifelse(loans$Duration.in.month > 24 & loans$Credit.amount > 10000, "predBad", "predGood")
+head(loans[, c("Duration.in.month","Credit.amount","pred.Default1")], 10)
+```
+- Explain what the following `ifelse` command produces.
+```{r}
+loans$pred.Default <- ifelse(loans$Duration.in.month <= 24 & loans$Credit.amount < 2200, "predBad", loans$pred.Default1)
+head(loans[, c("Duration.in.month","Credit.amount","pred.Default1","pred.Default")], 10)
+```
+- What data type do the `ifelse` commands above produce (factor or character)?
+
+
+### Question 6: Functions
+```{r}
+MeanSD <- function(x,plot=FALSE,...)
+{
+  mean.x <- mean(x,...)
+  sd.x <- sd(x,...)
+  if (plot) 
+    hist(x)
+  return(list(Mean=mean.x,SD=sd.x))
+}
+```
+
+- Use the `MeanSD` function to get mean, sd and histogram for `loans$Duration.in.month`
+- Why does the first command below return NA's while the second returns mean and SD?
+```{r}
+MeanSD(c(1,2,3,4,NA))
+MeanSD(c(1,2,3,4,NA), na.rm=TRUE)
+```
+- Change the function above to also include the median in it's statistical summary output.
