@@ -1,7 +1,7 @@
 ---
 title: "Reproducibilty and R Markdown" 
 author: "ECON 122"
-date: "Day 2"
+date: ""
 output: 
   ioslides_presentation:
     incremental: true
