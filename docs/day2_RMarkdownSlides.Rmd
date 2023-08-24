@@ -6,7 +6,7 @@ output:
   ioslides_presentation:
     incremental: true
     widescreen: true
-    keep_md: true
+    keep_md: no
   beamer_presentation:
     incremental: false
   github_document: default

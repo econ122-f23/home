@@ -1,7 +1,7 @@
 ---
 title: "Reproducibilty and R Markdown" 
 author: "ECON 122"
-date: "Day 2"
+date: ""
 output: 
   ioslides_presentation:
     incremental: true
@@ -27,7 +27,7 @@ output:
 
 ## Replicability vs. Reproducibility
 
-- Scientific findings should be **replicatable**
+- Scientific findings should be **replicable**
     + Ann repeats Bob's lab experiment and gets different data but makes the same conclusions as Bob
 - Statistical findings should be **reproducible**
     + Ann takes Bob's data and gets the exact same statistical results as Bob
