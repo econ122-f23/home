@@ -3205,12 +3205,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; }
 
 <slide class=""><hgroup><h2>Quick Comment: Cloning the home page and compiling slides</h2></hgroup><article  id="quick-comment-cloning-the-home-page-and-compiling-slides">
 
-<ul>
+<ul class = 'build'>
 <li><p>The recommended way to update course content is by cloning the home repository and pulling all the updates each week</p></li>
 <li><p>While click-through slides are useful for presentations, they may not be the best for review</p></li>
 <li><p>You can <code>Knit</code> the <code>.Rmd</code> file for the slides into a more conveient format</p>
 
-<ul>
+<ul class = 'build'>
 <li>You can turn <code>incremental</code> off</li>
 <li>You can output it to an <code>md</code> file</li>
 <li>You can output it as <code>beamer_presentation</code></li>
@@ -3219,20 +3219,20 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; }
 
 </article></slide><slide class=""><hgroup><h2>Replicability vs. Reproducibility</h2></hgroup><article  id="replicability-vs.-reproducibility">
 
-<ul>
-<li>Scientific findings should be <strong>replicatable</strong>
+<ul class = 'build'>
+<li>Scientific findings should be <strong>replicable</strong>
 
-<ul>
+<ul class = 'build'>
 <li>Ann repeats Bob’s lab experiment and gets different data but makes the same conclusions as Bob</li>
 </ul></li>
 <li>Statistical findings should be <strong>reproducible</strong>
 
-<ul>
+<ul class = 'build'>
 <li>Ann takes Bob’s data and gets the exact same statistical results as Bob</li>
 </ul></li>
 <li>Statistical findings should be <em>easily</em> <strong>reproducible</strong>
 
-<ul>
+<ul class = 'build'>
 <li>Ann only needs to hit one button to reproduce Bob’s results.</li>
 <li>Ann only needs to hit one button to reproduce Bob’s analysis on a <em>new data set</em></li>
 </ul></li>
@@ -3252,10 +3252,10 @@ Barb</pre>
 
 </article></slide><slide class=""><hgroup><h2>Open up Rstudio</h2></hgroup><article  id="open-up-rstudio" class="build">
 
-<ul>
+<ul class = 'build'>
 <li>Open your <code>test-assignment</code> Rstudio Project
 
-<ul>
+<ul class = 'build'>
 <li>Click on the <code>Files</code> tab (lower right window)</li>
 <li>Check the box by <code>test-assignment.Rmd</code></li>
 <li>Select menu <strong>More &gt; Copy</strong> and rename it <code>Barb.Rmd</code></li>
@@ -3265,17 +3265,17 @@ Barb</pre>
 
 <pre class = 'prettyprint lang-r'>&gt; loans &lt;- read.csv(&quot;https://raw.githubusercontent.com/mgelman/data/master/CreditData.csv&quot;)</pre>
 
-<ul>
+<ul class = 'build'>
 <li>This loads the correct (1000 case) data set</li>
 <li>Do your written answers match the R results?!</li>
 </ul>
 
 </article></slide><slide class=""><hgroup><h2>Making your work reproducible</h2></hgroup><article  id="making-your-work-reproducible">
 
-<ul>
+<ul class = 'build'>
 <li>You need a scriptable program (e.g. R, Python)
 
-<ul>
+<ul class = 'build'>
 <li>forces you to record the linear sequence of events in an analysis</li>
 <li>should be able to retrace your steps</li>
 <li>avoid point-n-click!</li>
@@ -3285,10 +3285,10 @@ Barb</pre>
 
 </article></slide><slide class=""><hgroup><h2>But scriptable doesn’t always mean reproducible</h2></hgroup><article  id="but-scriptable-doesnt-always-mean-reproducible">
 
-<ul>
+<ul class = 'build'>
 <li>You should make your workflow (&ldquo;soup to nuts&rdquo;) transparent and easily followed
 
-<ul>
+<ul class = 'build'>
 <li>meaningful file and variable names</li>
 <li>don’t overly complicate code, use packages when only when needed (the fewer dependencies the better)</li>
 <li>only relevant code included</li>
@@ -3298,43 +3298,43 @@ Barb</pre>
 
 </article></slide><slide class=""><hgroup><h2>Why should we strive for reproducibility?</h2></hgroup><article  id="why-should-we-strive-for-reproducibility">
 
-<ul>
+<ul class = 'build'>
 <li><strong>Your closest collaborator is you six months ago, but you don’t reply to emails.</strong>
 
-<ul>
+<ul class = 'build'>
 <li>You need to document your workflow for both yourself and current/future collaborators</li>
 </ul></li>
 <li>Can you open one of your old code and understand
 
-<ul>
+<ul class = 'build'>
 <li>the data used?</li>
 <li>the questions you were trying to answer?</li>
 <li>what your results mean?</li>
 </ul></li>
 <li>Statistical Consulting
 
-<ul>
+<ul class = 'build'>
 <li>from term to term we can continue, repeat or redo projects!</li>
 </ul></li>
 <li>R Markdown is a literate programming language that integrates R code, results and write-up.
 
-<ul>
+<ul class = 'build'>
 <li>literate = it is readable and easy to learn</li>
 </ul></li>
 </ul>
 
 </article></slide><slide class=""><hgroup><h2>R Markdown: how it works </h2><h3> <img src="http://r4ds.had.co.nz/images/RMarkdownFlow.png" width=600></h3></hgroup><article  id="r-markdown-how-it-works">
 
-<ol>
+<ol class = 'build'>
 <li>You create a .Rmd file</li>
 <li>You click the <code>knit</code> button in Rstudio (or run the <code>rmarkdown</code> package command <code>render(&quot;my.Rmd&quot;)</code>).</li>
 <li>A compiled html/pdf/word/… document magically appears</li>
 </ol>
 
-<ul>
+<ul class = 'build'>
 <li>Behind the scenes:
 
-<ul>
+<ul class = 'build'>
 <li><code>rmarkdown</code> uses <code>knitr</code> package to create a .md (Markdown) file</li>
 <li>the document converter <strong>pandoc</strong> takes the .md file and creates a html/pdf/word… document!</li>
 </ul></li>
@@ -3342,11 +3342,11 @@ Barb</pre>
 
 </article></slide><slide class=""><hgroup><h2>Writing a R Markdown document </h2><h3> 1. Formatting text</h3></hgroup><article  id="writing-a-r-markdown-document-1.-formatting-text">
 
-<ul>
+<ul class = 'build'>
 <li>References: <a href='http://r4ds.had.co.nz/r-markdown.html' title=''>Hadley’s page</a>, <a href='http://rmarkdown.rstudio.com/authoring_basics.html' title=''>Rstudio page</a>, <a href='https://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf' title=''>RStudio cheatsheet</a></li>
 <li>Simple rules for
 
-<ul>
+<ul class = 'build'>
 <li>section headers (<code>#</code>,<code>##</code>,etc)</li>
 <li>lists (need ~2 tabs to create sublists)</li>
 <li>formatting (bold <code>**</code>, italics <code>*</code>)</li>
@@ -3360,11 +3360,11 @@ Barb</pre>
 
 </article></slide><slide class=""><hgroup><h2>Writing a R Markdown document </h2><h3> 2. R chunks</h3></hgroup><article  id="writing-a-r-markdown-document-2.-r-chunks">
 
-<ul>
+<ul class = 'build'>
 <li>Begin with <code>```{r}</code> and end with <code>```</code></li>
 <li>Can run code within chunk in the R console
 
-<ul>
+<ul class = 'build'>
 <li>as an entire chunk</li>
 <li>line by line</li>
 </ul></li>
@@ -3372,7 +3372,7 @@ Barb</pre>
 
 </article></slide><slide class=""><hgroup><h2>Writing a R Markdown document </h2><h3> 2. R chunk options</h3></hgroup><article  id="writing-a-r-markdown-document-2.-r-chunk-options" class="build">
 
-<ul>
+<ul class = 'build'>
 <li>many options control the output produced/shown by a chunk</li>
 </ul>
 
@@ -3380,7 +3380,7 @@ Barb</pre>
 code stuff
 ```</pre>
 
-<ul>
+<ul class = 'build'>
 <li><code>echo=FALSE</code> omits R code but not results</li>
 <li><code>include=FALSE</code> omits R code and results</li>
 <li><code>eval=FALSE</code> code chunk is not run, but code displayed</li>
@@ -3391,7 +3391,7 @@ code stuff
 
 </article></slide><slide class=""><hgroup><h2>Writing a R Markdown document </h2><h3> 2. R chunk global options</h3></hgroup><article  id="writing-a-r-markdown-document-2.-r-chunk-global-options" class="build">
 
-<ul>
+<ul class = 'build'>
 <li>Set global document chunk options at the start of your file:</li>
 </ul>
 
@@ -3400,7 +3400,7 @@ knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, comment=NULL,
 eval=TRUE, message=FALSE, include=TRUE)
 ```</pre>
 
-<ul>
+<ul class = 'build'>
 <li>evaluate R chunks and include results, suppress (package) messages</li>
 <li><code>prompt=TRUE</code> shows <code>&gt;</code> prompt in front of commands</li>
 <li><code>comment=NULL</code> no comment <code>##</code> in front of output</li>
@@ -3409,7 +3409,7 @@ eval=TRUE, message=FALSE, include=TRUE)
 
 </article></slide><slide class=""><hgroup><h2>Writing a R Markdown document </h2><h3> 2. R chunk names</h3></hgroup><article  id="writing-a-r-markdown-document-2.-r-chunk-names" class="build">
 
-<ul>
+<ul class = 'build'>
 <li>Name your code chunks:</li>
 </ul>
 
@@ -3417,7 +3417,7 @@ eval=TRUE, message=FALSE, include=TRUE)
 my fancy code chunk
 ```</pre>
 
-<ul>
+<ul class = 'build'>
 <li>can see in drop-down menu (lower left)</li>
 <li>can reuse named chunks by just referencing chunk name</li>
 </ul>
@@ -3427,33 +3427,33 @@ my fancy code chunk
 
 </article></slide><slide class=""><hgroup><h2>Writing a R Markdown document </h2><h3> 2. Inline code</h3></hgroup><article  id="writing-a-r-markdown-document-2.-inline-code" class="build">
 
-<ul>
+<ul class = 'build'>
 <li><p>You can embed one R code command in your text by wrapping it in `<code>r</code> followed by `</p>
 
-<ul>
+<ul class = 'build'>
 <li>.Rmd file: The square root of 77 is `<code>r</code> sqrt(77)`</li>
 <li>.md file: The square root of 77 is 8.7749644</li>
 </ul></li>
 <li><p>Steps towards reproducibility</p>
 
-<ul>
+<ul class = 'build'>
 <li>Use inline commands when reporting results/stats in case your data changes…</li>
 </ul></li>
 </ul>
 
 </article></slide><slide class=""><hgroup><h2>Writing a R Markdown document </h2><h3> 3. Header</h3></hgroup><article  id="writing-a-r-markdown-document-3.-header">
 
-<ul>
+<ul class = 'build'>
 <li>The YAML header is always positioned at the top of a .Rmd, surrounded by <code>---</code></li>
 <li>Basic elements are <code>title</code>, <code>author</code> and <code>date</code>.</li>
 </ul>
 
 </article></slide><slide class=""><hgroup><h2>Writing a R Markdown document </h2><h3> 3. Header</h3></hgroup><article  id="writing-a-r-markdown-document-3.-header-1">
 
-<ul>
+<ul class = 'build'>
 <li><code>output</code> tells pandoc what form the final document should take
 
-<ul>
+<ul class = 'build'>
 <li>html_document (can’t view in GitHub)</li>
 <li>pdf_document (need MikTex or MacTex installed)</li>
 <li>github_document (creates a .md Markdown doc)</li>
@@ -3461,7 +3461,7 @@ my fancy code chunk
 </ul></li>
 <li>each output type can be further refined with formatting options
 
-<ul>
+<ul class = 'build'>
 <li>e.g. for these slides I specify <code>widescreen=true</code>, <code>incremental=true</code>, and <code>keep_md=false</code></li>
 <li>for documents, you might use <code>fig.caption=true</code></li>
 </ul></li>
@@ -3470,17 +3470,17 @@ my fancy code chunk
 
 </article></slide><slide class=""><hgroup><h2>Final comments</h2></hgroup><article  id="final-comments">
 
-<ul>
+<ul class = 'build'>
 <li>Start working towards writing reproducible analysis
 
-<ul>
+<ul class = 'build'>
 <li>doesn’t happen overnight</li>
 <li>using R Markdown is a good start!</li>
 <li>I don’t expect you to use inline code for all your assignments</li>
 </ul></li>
 <li>For the rest of today
 
-<ul>
+<ul class = 'build'>
 <li>finish up software setup</li>
 <li>work on test assignment</li>
 <li>work on class activity</li>
