@@ -50,7 +50,7 @@ library(knitr)
 
 Data Science:  [Google Trends](https://trends.google.com/trends/explore?date=all&geo=US&q=data%20science).
 
-<script type="text/javascript" src="https://ssl.gstatic.com/trends_nrtr/2674_RC03/embed_loader.js"></script> <script type="text/javascript"> trends.embed.renderExploreWidget("TIMESERIES", {"comparisonItem":[{"keyword":"data science","geo":"US","time":"2004-01-01 2021-08-27"}],"category":0,"property":""}, {"exploreQuery":"date=all&geo=US&q=data%20science","guestPath":"https://trends.google.com:443/trends/embed/"}); </script>
+<script type="text/javascript" src="https://ssl.gstatic.com/trends_nrtr/2674_RC03/embed_loader.js"></script> <script type="text/javascript"> trends.embed.renderExploreWidget("TIMESERIES", {"comparisonItem":[{"keyword":"data science","geo":"US","time":"2000-01-01 2023-08-01"}],"category":0,"property":""}, {"exploreQuery":"date=all&geo=US&q=data%20science","guestPath":"https://trends.google.com:443/trends/embed/"}); </script>
 
 ## How popular are "Data Science" jobs?
 

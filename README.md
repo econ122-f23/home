@@ -24,8 +24,8 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
 ------------------------------------------------------------------------
 ### Assignments due
 
-- [Test assignment]() (due **09/01**) 
-- [Problem Set 1]() (due **09/11**)
+- [Test assignment](https://classroom.github.com/a/c6lpvr3V) (due **09/01**) 
+- [Problem Set 1](https://classroom.github.com/a/6XoT-RdY) (due **09/11**)
 
 ------------------------------------------------------------------------
 ### Week 1 (08/28)
@@ -37,7 +37,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
 -   in class: 
     -   day 1 slides: [.Rmd](docs/day1_IntroSlides.Rmd) [.html](https://econ122-f23.github.io/home/day1_IntroSlides.html)
     -   continue setting up software
-    -   [test assignment]()
+    -   [test assignment](https://classroom.github.com/a/c6lpvr3V)
 
 **Wednesday** (reproducibility, R Markdown)
 
