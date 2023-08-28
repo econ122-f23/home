@@ -9,7 +9,7 @@ Office hours:
 
 Tutor sessions:
 
-- **Mo 06:00-08:00 PM (BC 23)** - Jen Lim
+- **Mo 08:00-10:00 PM (BC 24)** - Jen Lim
 - **We 08:00-10:00 PM (BC 22)** - Abizer Mamnoon
 
 
