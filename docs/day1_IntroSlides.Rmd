@@ -144,6 +144,8 @@ Focus on the "soup to nuts" approach to problem solving
   
 ## Using GitHub and Rstudio for data science
 
+- Rstudio is an integrated development environment (IDE) for R
+    - Provides a nice graphical interface with helpful tools
 - Rstudio lets you create git controlled projects
     - create a GitHub repo
     - make a Rstudio project using your cloned repo
