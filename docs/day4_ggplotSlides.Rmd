@@ -1,0 +1,214 @@
+---
+title: "`ggplot` graphics" 
+author: "ECON 122"
+date: "Day 4"
+output: 
+  ioslides_presentation:
+    incremental: true
+    widescreen: true
+    keep_md: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL, warning=FALSE, error=TRUE)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+
+## Exploratory data analysis (EDA)
+
+- Our ultimate goal is a statistical hypothesis test or robust statistical pattern
+  - However, oftentimes, real world data is messy
+- Ex: you come up with a thesis topic and write down all the theory and statistical analysis you want to perform
+    - You find a relevant dataset, but should you trust it? 
+- With large datasets, unrealistic to go through and check all the data
+- Plotting a few key relationships can help us determine how usable our data is
+- ggplot is your best friend when it comes to EDA! 
+
+## `ggplot2`: a grammar for graphics {.build}
+
+- created by Hadley Wickham
+- purposefully written to follow good graphing taxonomy
+- allows you to create a graph in small, *readable* code chunks
+- install the `ggplot2` package on your computer (if needed)
+```{r, message = FALSE}
+library(ggplot2)
+packageVersion("ggplot2")
+```
+
+
+## `ggplot2` grammar {.build}
+
+- If you are really interested in the theory of Data Visualization, see Ch. 2
+    - Basic idea is that there is a hierarchy of how we notice graphical features
+
+- ggplot attempts to follow that hierarchy 
+```
+ggplot(data) +    # data
+  <geometry_funs>(aes(<variables>)) + # aesthetic variable mapping
+  <label_funs> +  # add context
+  <facet_funs> +  # add facets (optional)
+  <coordinate_funs> +  # play with coords (optional)
+  <scale_funs> + # play with scales (optional)
+  <theme_funs> # play with axes, colors, etc (optional)
+```
+- can **layer** geometry functions
+
+
+## `Survey` data {.build}
+
+- the dataset `Survey` provides student data from a survey:
+```{r}
+survey <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/Survey.csv")
+```
+- Look first at GPA (Q15) and possible sci or non-sci major (Q16) 
+
+
+
+## Data {.build}
+
+- The first layer sets the graphical environment
+```{r, fig.height=3.5}
+ggplot(data=survey) 
+```
+
+
+## Aesthetics  {.build}
+
+- Aesthetics describes the mapping of variables to your graph
+    - for numeric, default scale is Cartesian 
+- `aes` aesthetics can also be given in the `ggplot` command
+```{r, fig.height=3.5}
+ggplot(data=survey, aes(x=Question.15)) 
+```
+
+## Geometry  {.build}
+
+- The geometry determines what form the plot has
+- What type of plot would be useful here?
+    + Here a `histogram` makes sense:
+    
+```{r, fig.height=3.5}
+ggplot(data=survey, aes(x=Question.15)) + geom_histogram()
+```
+
+## EDA for data clean up  {.build}
+
+- Obviously there were some typos in the GPA data. 
+- Subset the data so only cases with a reasonable GPA are included.
+```{r, fig.height=3.5}
+survey <- survey[survey$Question.15 <=4.0 & survey$Question.15 >0,]
+ggplot(data=survey, aes(x=Question.15)) + geom_histogram()
+```
+
+## Faceting  {.build}
+
+- Can add a third variable, science or non-sci major (Q16), with a facet:
+```{r, fig.height=3.5}
+ggplot(data=survey, aes(x=Question.15)) + geom_histogram() + facet_wrap(~Question.16)
+```
+
+- Note: need `~` before the variable for `facet_wrap()`
+
+## Another option  {.build}
+
+- Could also use side-by-side boxplots:
+```{r, fig.height=3.5}
+ggplot(data=survey, aes(y=Question.15, x=Question.16)) + geom_boxplot() 
+```
+
+- This is where ggplot shines. Very easy to change the plot 
+
+## `ggplot` and `NA`'s  {.build}
+
+- Need to omit `NA` rows from data if you want them omitted from your graphics
+```{r, fig.height=3.5}
+survey <- survey[!is.na(survey$Question.16),]
+ggplot(data=survey, aes(y=Question.15, x=Question.16)) + geom_boxplot() 
+```
+
+## Adjusting coordinates  {.build}
+
+- We can flip the x/y coordinates (`boxplot` always wants `x` to be categorical and `y` numeric)
+```{r, fig.height=3.5}
+ggplot(data=survey, aes(y=Question.15, x=Question.16)) + geom_boxplot() + coord_flip()
+```
+
+## Context! Add labels {.build}
+
+- Options include `ggtitle` and `labs`, change text size too
+```{r, fig.height=3.5}
+ggplot(data=survey, aes(y=Question.15, x=Question.16)) + geom_boxplot() + coord_flip() + 
+  labs(title="GPA by major", x="Major Area", y="GPA") + 
+  theme(text=element_text(size=18))
+```
+
+## How to proceed {.build}
+
+- Get to know basic command structure (`ggplot + geom`)
+    - Use cheat sheet to see `aes` options for each `geom`
+    - `help`...`cheat sheets`
+- Then add context layers: labels, font sizes, etc
+- `?theme`: non-data features (fonts, legends, axes)
+-  `?scale_`: scale (x,y,fill, shape) data features
+
+
+## Scatterplot {.build}
+
+- The previous example looks at the properties of **one** variable 
+- Now, let's look at the relationship between **two** variables
+    -  number of facebook friends (Q12) and GPA (Q15) 
+```{r, fig.height=3.5}
+ggplot(survey, aes(x=Question.12,y=Question.15)) + geom_point() 
+```
+
+## Scatterplot {.build}
+
+Change symbol size and shape
+```{r, fig.height=3.5}
+ggplot(survey, aes(x=Question.12,y=Question.15)) + geom_point(size=3,shape=2) 
+```
+
+## Scatterplot {.build}
+
+Change symbol shape by `major` (Q16): requires `aes` argument!
+```{r, fig.height=3.5}
+ggplot(survey, aes(x=Question.12,y=Question.15)) + 
+  geom_point(aes(shape=Question.16), size=3) 
+```
+
+## Scatterplot {.build}
+
+Change symbol color by `major` (Q16): requires `aes` argument!
+
+
+```{r, fig.height=3.5}
+ggplot(survey, aes(x=Question.12,y=Question.15)) + 
+  geom_point(aes(color=Question.16), size=3) 
+```
+
+## Scatterplot {.build}
+
+Change symbol size by number of tv hours/week (Q14): requires `aes` argument!
+```{r, fig.height=3.5}
+ggplot(survey, aes(x=Question.12,y=Question.15)) + 
+  geom_point(aes(color=Question.16, size=Question.14)) 
+```
+
+## Scatterplot (legend labels) {.build}
+- Need to address labels by type of variable
+    - The `color` is the `discrete` variable "major"
+    - The `size` is the `continuous` variable tv
+```{r, fig.height=3.0}
+ggplot(survey, aes(x=Question.12,y=Question.15)) + 
+  geom_point(aes(color=Question.16, size=Question.14)) + scale_color_discrete(name="major") + 
+  scale_size_continuous(name="tv hours/week")
+```
+

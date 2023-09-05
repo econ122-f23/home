@@ -1,0 +1,268 @@
+---
+title: "`ggplot` bar graphs, maps, and colors" 
+author: "ECON 122"
+date: "Day 5"
+output: 
+  ioslides_presentation:
+    incremental: true
+    widescreen: true
+    keep_md: false
+  github_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL, warning=FALSE, error=FALSE)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","mapproj","dplyr")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+## Bar graphs {.build}
+```{r, echo=FALSE}
+survey <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/Survey.csv")
+```
+- So far our main variable of interest has been continuous (GPA)
+- How do we plot data that is categorical?
+- We want to analyze political comfort level (Q9)
+```{r, fig.height=3.5, fig.width=8}
+head(survey$Question.9)
+```
+
+
+## Bar graphs {.build}
+
+How does political comfort level (Q9) vary by religious group (Q8)?
+```{r, fig.height=3.5, fig.width=8}
+ggplot(survey, aes(x=Question.8, fill=Question.9)) + geom_bar(position="fill")
+```
+
+## `geom_bar` from summarized data {.build}
+
+- The last example plotted survey response data using `geom_bar`
+    - each row represented `one` response
+    - `ggplot` automatically summarized them for us
+- What if our data is already summarized? 
+    - Below is school district passing percentages by year:
+```{r, echo=FALSE, fig.height=4.5, fig.width=5}
+mca <- data.frame(percent = c(24.5, 33.7, 19.4, 22.4, 27.6, 32.1, 20.2, 20.2, 26.0, 33.7, 20.1, 20.1), meets = factor(rep(c("Exceeds", "Meets", "Partially Meets", "Does not Meet"), 3), levels=c( "Exceeds","Meets","Partially Meets","Does not Meet")), year = rep(c("2015","2016","2017"), each=4))
+mca %>% as.tbl
+```
+
+## `geom_bar` from summarized data {.build}
+
+- the `percent` variable tells us bar heights (`y`)
+- must be paired with `stat="identity"` in `geom_bar`
+    - alternatively, can use `geom_col`
+```{r, fig.height=3.1}
+ggplot(mca, aes(x=year, y=percent, fill=meets)) +
+  geom_bar(stat = "identity", position = "fill")
+```
+
+
+## `ggplot2` maps {.build}
+
+The `ggplot2` package contains latitude and longitude to define geographic boundries
+    - some regions: `state`, `usa`, `world`, `county`
+    - see `maps` package for more regions
+```{r}
+MainStates <- map_data("state")
+str(MainStates)
+```
+
+## Maps using `geom_path` {.build}
+
+`geom_path` connects the dots between lat (`y`) and long (`x`) points in a given `group`
+```{r, fig.height=3.7}
+ggplot(MainStates) + 
+    geom_path(aes(x=long, y=lat, group=group))
+```
+
+## Maps using `geom_polygon` {.build}
+
+`geom_polygon` is like `geom_path` but it connects start and end points which allows you to `fill` a closed polygon shape
+```{r, fig.height=3.7}
+ggplot(MainStates) + 
+    geom_polygon(aes(x=long, y=lat, group=group), color="black", fill="lightgreen")
+```
+
+## Spatial data {.build}
+
+- Earth is a 3-D object but a map is 2-D
+    - spatial projection transforms (projects) lat/long locations on a sphere to a cartesian plane
+    - distance between latitude is constant (~69 miles/degree lat)
+    - distance between longitude decreases as you approach the poles (~69 miles/degree at equator to 0 miles at poles)
+- many possible projections that preserve some feature
+    - area, angle, distance, ...
+- Mercator projection preserves angle but distorts area 
+
+## Maps using `coord_quickmap()` {.build}
+
+the `coord_quickmap` function provides a Mercator approximation by fixing a lat/long ratio
+    - good for small regions close to equator
+```{r, fig.height=3.7}
+ggplot(MainStates) + 
+    geom_polygon(aes(x=long, y=lat, group=group), color="black", fill="lightgreen") + 
+  coord_quickmap()
+```
+
+## Maps using `coord_map()` {.build}
+
+the `coord_map` function provides a Mercator projection
+    - see `mapproj` package for more projection options
+```{r, fig.height=3.7}
+ggplot(MainStates) + 
+    geom_polygon(aes(x=long, y=lat, group=group), color="black", fill="lightgreen") + 
+  coord_map()
+```
+
+## World with `coord_quickmap` {.build}
+```{r, fig.height=3.7}
+world <- map_data("world")
+ggplot(world) + 
+    geom_polygon(aes(x=long, y=lat, group=group), color="black", fill="white") + 
+  coord_quickmap()
+```
+
+## World with `coord_map` {.build}
+```{r, fig.height=3.7}
+ggplot(world) + 
+    geom_polygon(aes(x=long, y=lat, group=group), color="black", fill="white") + 
+  coord_map() + scale_x_continuous(limits=c(-180,180))
+```
+
+## Cloropleth maps using `geom_map` {.build}
+
+- A cloropleth map uses color or shading of subregions to visualize data
+- State level data from the 2016 American Community Survey 
+```{r}
+ACS <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/ACS2016.csv")
+
+ACS <- ACS[ACS$region != "Alaska" & ACS$region != "Hawaii",] # only 48+D.C.
+ACS$region <- tolower(ACS$region)  # lower case (match MainStates regions)
+str(ACS)
+```
+
+## Cloropleth maps using `geom_map` {.build}
+
+- Want to visualize "% born in state"
+- Don't need to merge data. Can have two separate data files: state data `ACS` + mapping data `MainStates`
+    - But need to make sure the state names in `region` are the **same**
+```{r, fig.height=2.5}
+ggplot() + coord_map() + 
+  geom_map(data=ACS, aes(map_id = region, fill = PercentInState), map = MainStates) +
+  expand_limits(x=MainStates$long, y=MainStates$lat) + ggtitle("% Born in State")
+```
+
+## Cloropleth maps using `geom_map` {.build}
+
+- Add point layer for state capitals in third data set 
+```{r, fig.height=3.0}
+capitals <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/capitals.csv")
+capitals <- capitals[capitals$state != "Alaska" & capitals$state != "Hawaii",] # only 48
+ggplot(data=ACS) + coord_map() +
+  geom_map(data=ACS, map=MainStates, aes(map_id = region, fill = PercentInState)) + 
+   geom_point(data=capitals, aes(x=long,y=lat), size=.7, color="red") + 
+  expand_limits(x=MainStates$long, y=MainStates$lat) + ggtitle("% Born in State")
+```
+
+## Adjusting color {.build}
+
+- When `color=` is a categorical variable, can use `scale_color_brewer()` or `scale_color_manual()` to change color 
+    - same for `fill` colors (change `color` to `fill`)
+    - See textbook page 21 for Brewer color palette names
+    - can use base-R colors in `rainbow`, `colors` or `palette` for `manual`
+- When `color` is a numeric variable, can use `scale_color_distiller()` for Brewer colors and versions of `scale_color_gradient()` for manual colors
+    - sequential colors: for low to high data (one direction)
+    - diverging colors: for data with a "middle" (higher or lower than the middle)
+
+## Color for numeric variables {.build}
+
+```{r, fig.height=3.7}
+mymap <- ggplot() + coord_map() + 
+  geom_map(data=ACS, aes(map_id = region, fill = PercentInState), map = MainStates) +
+  expand_limits(x=MainStates$long, y=MainStates$lat) + ggtitle("% Born in State") 
+mymap + scale_fill_distiller()
+```
+
+## Color for numeric variables {.build}
+
+- See `?scale_fill_distiller` for `palette` option names
+```{r, fig.height=3.7}
+mymap + scale_fill_distiller(palette = "Oranges")
+```
+
+## Color for numeric variables {.build}
+
+- Manual choice, see `colors()` for color options
+```{r, fig.height=3.7}
+mymap + scale_fill_gradient(low="lightpink", high="purple4")
+```
+
+## Color for numeric variables {.build}
+
+- Sometimes we want to look at how numbers deviate from 0
+- Let's look at the difference between state median income and national median income
+    - national median income is estimated to be about $27,000 in 2016
+```{r, fig.height=3.7}
+mymap2 <- ggplot() + coord_map() + 
+  geom_map(data=ACS, aes(map_id = region, fill = MedianIncome - 27000), map = MainStates) +
+  expand_limits(x=MainStates$long, y=MainStates$lat) + ggtitle("Difference from US median income") 
+```
+
+## Color for numeric variables {.build}
+
+- Sequential choice (default) doesn't highlight deviations from overall median income
+```{r, fig.height=3.7}
+mymap2 + scale_fill_distiller(palette = "Oranges")
+```
+
+## Color for numeric variables {.build}
+
+- change `type="div"` and color `palette`
+```{r, fig.height=3.7}
+mymap2 + scale_fill_distiller(type="div", palette = "RdYlBu")
+```
+
+## Color for numeric variables {.build}
+
+- can switch direction of colors
+```{r, fig.height=3.7}
+mymap2 + scale_fill_distiller(type="div", palette = "RdYlBu", direction = 1)
+```
+
+## Color for numeric variables {.build}
+
+- `gradient2` manually fills diverging colors, can fix mid color
+```{r, fig.height=3.7}
+mymap2 + scale_fill_gradient2(midpoint = 0, low="red", high="blue", name="Difference ($)")
+```
+
+## Color for categorical variables {.build}
+
+- Another `fill` color used!
+```{r, fig.height=3.5}
+mybar <- ggplot(mca, aes(x=year, y=percent, fill=meets)) +
+  geom_bar(stat = "identity", position = "fill")
+mybar + scale_fill_brewer()
+```
+
+## Color for categorical variables {.build}
+
+- Could use a diverging color
+```{r, fig.height=3.5}
+mybar + scale_fill_brewer(palette = "Spectral", direction=-1)
+```
+
+## Color for categorical variables {.build}
+
+- can also manually fill colors
+```{r, fig.height=3.5}
+mybar + scale_fill_manual(values=c("blue", "green","yellow","red")) 
+```
+
+

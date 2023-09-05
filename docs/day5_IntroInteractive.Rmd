@@ -1,0 +1,87 @@
+---
+title: "Intro to interactive graphs" 
+author: "ECON 122"
+date: "Day 5"
+runtime: shiny
+output: 
+  ioslides_presentation:
+    incremental: true
+    widescreen: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=FALSE, eval=TRUE, message=F, include=T,comment=NULL, error=TRUE)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","plotly")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+## Interactive graphs
+
+- An interactive graph allows the user, or **client**, to change features of the graph
+- We will explore a couple options in R 
+
+## Using `plotly`
+
+- The R package `plotly` makes quick and easy interactive graphs 
+    + hovering, brushing, zooming, tracing
+- Can upload graphs to the web
+
+## Using `plotly`: quick example
+
+
+```{r, fig.height=3.8}
+tweets<- read.csv("https://raw.githubusercontent.com/mgelman/data/master/TrumpTweetData.csv")
+w <- ggplot(data=tweets[!is.na(tweets$source),], 
+            aes(x=nWords, y=nRealWords, color=source)) + geom_jitter() 
+ggplotly(w) 
+```
+
+## Using `plotly`: quick example
+
+```{r, echo=FALSE}
+mca <- data.frame(percent = c(24.5, 33.7, 19.4, 22.4, 27.6, 32.1, 20.2, 20.2, 26.0, 33.7, 20.1, 20.1), meets = factor(rep(c("Exceeds", "Meets", "Partially Meets", "Does not Meet"), 3), levels=c( "Exceeds","Meets","Partially Meets","Does not Meet")), year = rep(c("2015","2016","2017"), each=4))
+mybar <- ggplot(mca, aes(x=year, y=percent, fill=meets)) +
+  geom_bar(stat = "identity", position = "fill") + scale_fill_manual(values=c("blue", "green","yellow","red")) 
+ggplotly(mybar) 
+```
+
+
+## Creating Shiny graphs
+- Shiny is an R package that provides a fairly high-level framework for creating interactive graphics
+- Rstudio makes it easy to create and even upload these graphs to the web
+- Can embed a shiny plot in Markdown HTML docs
+    + Need to add `runtime: shiny` to your YAML header
+
+## Creating Shiny graphs: example
+```{r, echo=FALSE}
+inputPanel(
+  # bin widget:
+  radioButtons("n_bins", label = "Number of histogram bins:",
+              choices = seq(50,125,by=25), selected = 75, inline=FALSE, width=2000),
+  # bandwidth widget:
+  sliderInput("bw_adjust", label = "Density smoother bandwidth adjustment:",
+              min = 0.1, max = 2, value = 1, step = 0.1)
+)
+renderPlot({
+  ggplot(tweets,aes(x=charCount)) + 
+    geom_histogram(aes(y=..density..),bins=input$n_bins) +
+    geom_density(color="blue", adjust=input$bw_adjust,size=1.5)
+})
+```
+
+## Shiny vs. plotly examples
+
+- Shiny graph need to be "connected" to Rstudio or a remote Rstudio server
+    + E.g. histogram heights need to be recalculated when you change # of bins!
+    + this is why your html "disappears" when you close Rstudio
+- The plotly graph just needs the data to ID points (no stats to calculate)
+- You can deploy shiny apps online
+    + using Rstudio's cloud server (free/fee)
+    + [creating a shiny R server](https://stclairstatsapps.shinyapps.io/ShinyDemo/)
+    
