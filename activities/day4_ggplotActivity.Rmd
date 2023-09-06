@@ -109,4 +109,3 @@ w + geom_smooth(se=FALSE) + geom_smooth(method="lm", se=FALSE, color="red") + fa
 
 ### Question 10: Which visual method gives a clearer comparison of the word trends in the three sources?
 
-___

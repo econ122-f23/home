@@ -158,5 +158,3 @@ Now we will try faceting by `source`:
 ### Question 9: Try rerunning the facet chunk without omitting the NA sources. What happens?
 
 ### Question 10: Which visual method gives a clearer comparison of the word trends in the three sources?
-
-------------------------------------------------------------------------
