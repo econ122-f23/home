@@ -54,7 +54,7 @@ ls()
     + vectors, data frames, matrices, lists, functions, lm, ...
 - We usually store objects in the workspace using the assignment **operator** `<-`
 ```{r}
-x <- c(8,2,1,3)
+x <- c(8,2,1,3) #c() a generic function which combines its arguments into a vector
 ls()
 ```
 - The `=` operator also does assignment, but it is mainly used for argument specification inside a function.
@@ -99,6 +99,7 @@ length(x.list)
 - A **matrix** is a 2-dimensional vector containing entries of the same type
 ```{r}
 x
+class(x) #class() tells you the class of an object. Is different from typeof()
 x.mat <- matrix(x, nrow=2, byrow=TRUE)
 x.mat
 class(x.mat)
@@ -138,7 +139,7 @@ attributes(x.df)  # note: attributes returns a list!
 
 ## Data types: factors {.build}
 
-- Factors are a data type stored as integers
+- A factor is a way to store a character data type as an integer. **why?**
     - The attribute `levels` is a character vector of possible values
     - Values are stored as the integers (1=first `level`, 2=second `level`, etc)
 ```{r}
@@ -216,41 +217,23 @@ x.mat2
 x.mat2[,1] # first column
 x.mat2[1:2,1] # first 2 rows of first column
 ```
-
-- R doesn't always preserve class:  
-```{r}
-class(x.mat2[1,])  # one row (or col) is no longer a matrix (1D)
-```
-
 ## Subsetting: Data frames {.build}
 
 - you can access entries like a matrix:
 ```{r}
 x.df
 x.df[,1]  # first column, all rows
-class(x.df[,1])  # first column is no longer a data frame
 ```
-
-- One column of a data frame is no longer a data frame 
-
-## Subsetting: Data frames {.build}
-
-- but *one row* with 2 or more columns (variables) is still a data frame
-```{r}
-x.df[1, 1:2]  # 1 row, 2 columns
-class(x.df[1, 1:2])
-```
-- Remember that data frames are built from **lists** of variables (vectors) so they are different objects than matrices
-
-## Subsetting: Data frames {.build}
-
 - or access columns with `$`
 ```{r}
 x.df$x  # get variable x column
 ```
-- you can also use column names to subset:
+
+## Subsetting: Data frames {.build}
+
+- For subsetting rows and columns, you can pass vectors for each argument
 ```{r}
-loans[1:2,c("Good.Loan","Credit.amount")] # get 2 rows of Good.Loan and Credit.amount
+loans[1:5,c("Good.Loan","Credit.amount")] # get 5 rows of Good.Loan and Credit.amount
 ```
 
 

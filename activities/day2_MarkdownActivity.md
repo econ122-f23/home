@@ -170,8 +170,6 @@ I often load libraries that have annoying messages:
 library(dplyr)
 ```
 
-    ## Warning: package 'dplyr' was built under R version 4.2.1
-
     ## 
     ## Attaching package: 'dplyr'
 

@@ -3278,7 +3278,7 @@ character(0)</pre>
 <li>We usually store objects in the workspace using the assignment <strong>operator</strong> <code>&lt;-</code></li>
 </ul>
 
-<pre class = 'prettyprint lang-r'>&gt; x &lt;- c(8,2,1,3)
+<pre class = 'prettyprint lang-r'>&gt; x &lt;- c(8,2,1,3) #c() a generic function which combines its arguments into a vector
 &gt; ls()
 [1] &quot;x&quot;</pre>
 
@@ -3348,6 +3348,8 @@ character(0)</pre>
 
 <pre class = 'prettyprint lang-r'>&gt; x
 [1] 8 2 1 3
+&gt; class(x) #class() tells you the class of an object. Is different from typeof()
+[1] &quot;numeric&quot;
 &gt; x.mat &lt;- matrix(x, nrow=2, byrow=TRUE)
 &gt; x.mat
      [,1] [,2]
@@ -3439,7 +3441,7 @@ $row.names
 </article></slide><slide class=""><hgroup><h2>Data types: factors</h2></hgroup><article  id="data-types-factors" class="build">
 
 <ul>
-<li>Factors are a data type stored as integers
+<li>A factor is a way to store a character data type as an integer. <strong>why?</strong>
 
 <ul>
 <li>The attribute <code>levels</code> is a character vector of possible values</li>
@@ -3566,13 +3568,6 @@ Levels: BadLoan GoodLoan</pre>
 &gt; x.mat2[1:2,1] # first 2 rows of first column
 [1] 8 2</pre>
 
-<ul>
-<li>R doesn’t always preserve class:</li>
-</ul>
-
-<pre class = 'prettyprint lang-r'>&gt; class(x.mat2[1,])  # one row (or col) is no longer a matrix (1D)
-[1] &quot;numeric&quot;</pre>
-
 </article></slide><slide class=""><hgroup><h2>Subsetting: Data frames</h2></hgroup><article  id="subsetting-data-frames" class="build">
 
 <ul>
@@ -3586,31 +3581,7 @@ Levels: BadLoan GoodLoan</pre>
 3 1        2
 4 3        6
 &gt; x.df[,1]  # first column, all rows
-[1] 8 2 1 3
-&gt; class(x.df[,1])  # first column is no longer a data frame
-[1] &quot;numeric&quot;</pre>
-
-<ul>
-<li>One column of a data frame is no longer a data frame</li>
-</ul>
-
-</article></slide><slide class=""><hgroup><h2>Subsetting: Data frames</h2></hgroup><article  id="subsetting-data-frames-1" class="build">
-
-<ul>
-<li>but <em>one row</em> with 2 or more columns (variables) is still a data frame</li>
-</ul>
-
-<pre class = 'prettyprint lang-r'>&gt; x.df[1, 1:2]  # 1 row, 2 columns
-  x double.x
-1 8       16
-&gt; class(x.df[1, 1:2])
-[1] &quot;data.frame&quot;</pre>
-
-<ul>
-<li>Remember that data frames are built from <strong>lists</strong> of variables (vectors) so they are different objects than matrices</li>
-</ul>
-
-</article></slide><slide class=""><hgroup><h2>Subsetting: Data frames</h2></hgroup><article  id="subsetting-data-frames-2" class="build">
+[1] 8 2 1 3</pre>
 
 <ul>
 <li>or access columns with <code>$</code></li>
@@ -3619,14 +3590,19 @@ Levels: BadLoan GoodLoan</pre>
 <pre class = 'prettyprint lang-r'>&gt; x.df$x  # get variable x column
 [1] 8 2 1 3</pre>
 
+</article></slide><slide class=""><hgroup><h2>Subsetting: Data frames</h2></hgroup><article  id="subsetting-data-frames-1" class="build">
+
 <ul>
-<li>you can also use column names to subset:</li>
+<li>For subsetting rows and columns, you can pass vectors for each argument</li>
 </ul>
 
-<pre class = 'prettyprint lang-r'>&gt; loans[1:2,c(&quot;Good.Loan&quot;,&quot;Credit.amount&quot;)] # get 2 rows of Good.Loan and Credit.amount
+<pre class = 'prettyprint lang-r'>&gt; loans[1:5,c(&quot;Good.Loan&quot;,&quot;Credit.amount&quot;)] # get 5 rows of Good.Loan and Credit.amount
   Good.Loan Credit.amount
 1  GoodLoan          1169
-2   BadLoan          5951</pre>
+2   BadLoan          5951
+3  GoodLoan          2096
+4  GoodLoan          7882
+5   BadLoan          4870</pre>
 
 </article></slide><slide class=""><hgroup><h2>Subsetting: Lists</h2></hgroup><article  id="subsetting-lists" class="build">
 
