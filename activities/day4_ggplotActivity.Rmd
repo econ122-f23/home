@@ -9,7 +9,6 @@ output: github_document
 knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL)
 ```
 
-
 ## Trump Tweets
 Let's revisit the data collected on Trump tweets.
 ```{r}
@@ -110,3 +109,4 @@ w + geom_smooth(se=FALSE) + geom_smooth(method="lm", se=FALSE, color="red") + fa
 
 ### Question 10: Which visual method gives a clearer comparison of the word trends in the three sources?
 
+___
