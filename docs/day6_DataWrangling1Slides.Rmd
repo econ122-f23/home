@@ -1,0 +1,189 @@
+---
+title: "Data wrangling: one data table" 
+author: "ECON 122"
+date: "Day 6"
+output: 
+  ioslides_presentation:
+    incremental: true
+    widescreen: true
+    fig_height: 4
+    fig_width: 7
+    keep_md: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr", "lubridate")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+## Data Wrangling {.build}
+
+- Data wrangling is an extremely important data science skill
+- methods for *filtering*, *transforming*,  *restructuring* and *combining* datasets should be 
+    + readable
+    + reproducible
+    + include checks of data quality (typos, code errors, etc)
+- Hadley Wickham's `dplyr` package is designed for this type of wrangling
+
+## The `dplyr` package {.build}
+
+- package is designed for readable data wrangling
+    + everything you can do with `dplyr` can be done without it (but maybe not as nicely/easily)
+- There are 5 key *verbs* (actions):
+    + `filter()`: pick observations (rows) of interest (subset)
+    + `select()`: pick variables (columns)
+    + `mutate()`: modify existing variables or create new variables
+    + `summarize()`: collapse many values down into a single summary 
+    + `arrange()`: sort obervations
+- `group_by()`: changes the scope, or unit of analysis, from individual cases to aggregated groups
+    - use with either `summarize` or `mutate`
+
+## `filter` {.build}
+
+- Basic command: `filter(data, condition)` 
+- `filter(data, cond1, cond2)`: rows that meet `cond1` AND `cond2`
+- Let's filter (subset) the `loans` data to get the 300 bad loans cases:
+```{r}
+loans <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/CreditData.csv")
+badLoans  <- filter(loans, Good.Loan == "BadLoan")
+dim(badLoans)
+badLoans2 <- loans[loans$Good.Loan == "BadLoan",]
+dim(badLoans2)
+```
+
+- What about bad loans that are costly?!
+```{r}
+costlyBadLoans <- filter(loans, Good.Loan == "BadLoan", Credit.amount > 10000)
+dim(costlyBadLoans)
+```
+
+## `select` {.build}
+
+- Basic command: 
+    - `select(data, var1, var2)` gets vars 1 and 2 (add `-` to omit)
+    - `select(data, var3:var5)` gets vars 3-5 (add `-` to omit)
+    - `select(data, starts_with("ab"))` select variables starting with "ab"
+    - `select(data, ends_with("yz"))` select variables ending with "yz"
+    - `select(data, contains("mn"))` selects variables containing "mn" strings
+    
+- Omit variables with a period . in the name:
+```{r}
+loansNoPeriods <- select(loans, -contains("."))
+names(loansNoPeriods)
+```
+    
+    
+## `select` {.build}
+
+- Get credit amount from `loans`
+```{r}
+credit <- select(loans, Credit.amount)
+str(credit)  # one vector is still a data frame! 
+```
+-  `dplyr` commands preserve data frame class
+- base-R subsetting does not always preserve class
+```{r}
+credit2 <- loans[, "Credit.amount"]
+str(credit2)  
+```
+
+## Piping  {.build}
+
+- piping `%>%` allows you to put the output of one function into the input of another
+    - akin to function composition
+    - `x %>% f() %>% g()` is equal to `g(f(x))`
+    - `x %>% f() %>% g()` is read: take `x`, then apply function `f`, then apply function `g`
+    - Think of it like an assembly line where you pass the completed task on to another worker
+    
+## Piping  {.build}
+
+- Let's pull the credit and duration for bad loans
+```{r}
+badloans <- loans %>% 
+  filter(Good.Loan == "BadLoan") %>%
+  select(Credit.amount, Duration.in.month)
+```
+is the same as
+```{r}
+badLoans2  <- select(filter(loans, Good.Loan == "BadLoan"), Credit.amount, Duration.in.month)
+```
+
+- Same but more readable (means less likely to make errors)
+
+
+## `mutate` {.build}
+
+- Basic command: `mutate(data, newvar1= fun1, newvar2= fun2)`
+- Adds a newly created variable(s) to `data`
+    + can use `newvar1` to create `newvar2` in the same command
+- Called a *vectorized* command because it applies a function to all individual variable entries (preserved data frame length)
+```{r}
+loans %>%
+            mutate(durationYears = Duration.in.month/12) %>%
+            select(Duration.in.month, durationYears)
+```
+
+
+
+## `summarize` {.build}
+
+- Basic command: `summarize(data, newvar1= fun1(var), newvar2= fun2(var))`
+- `summarize` applies the `fun` to variable(s) and returns *one* value
+    - takes a data frame with `n` rows and returns a data frame with 1 row
+- Here are the mean and sd for credit amount
+```{r}
+loans %>% summarize(mn = mean(Credit.amount), sd = sd(Credit.amount))
+```
+
+## `summarize` {.build}
+
+- proportion of *all loans that defaulted* that are less or equal to 24 months duration 
+- `base-R`
+```{r}
+mean(loans$Duration.in.month[loans$Good.Loan == "BadLoan"] <= 24)
+```
+- `dplyr`
+```{r}
+loans %>% filter(Good.Loan == "BadLoan") %>%
+  mutate(less24 = Duration.in.month <= 24) %>%
+  summarize(prop = mean(less24))
+```
+
+## `group_by`  {.build}
+
+- very useful command for applying functions to subgroups (analogous to `face_wrap`)
+- `group_by(groupVar1, groupVar2)` changes the analysis unit from the individuals to the groups defined by `groupVar`s
+    - followed by `summarize`, gives stats by groups
+    - followed by `mutate`, applies function by group
+- can `ungroup()` to return "focus" back to entire data frame (instead of groups)
+
+
+## `group_by` {.build}
+
+-  credit amounts by loan status
+    - `n()` gives us the number of observations
+        - since summarize collapses data, `n()` helps you preserve information
+```{r}
+loans.summarize <- loans %>% group_by(Good.Loan) %>%
+             summarize(mn = mean(Credit.amount), sd = sd(Credit.amount), n = n())
+loans.summarize
+```
+
+
+## `arrange` {.build}
+- How can we sort values in a DF?
+- One last command: `arrange(data, var1)` sorts from low to high by `var1`
+    - descending order uses `desc(var1)`
+```{r}
+loans %>% select(Credit.amount, Good.Loan,Duration.in.month) %>%
+  arrange(desc(Credit.amount)) %>% head()
+```
+
+
