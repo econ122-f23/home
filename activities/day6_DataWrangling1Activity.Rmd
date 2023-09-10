@@ -1,0 +1,93 @@
+---
+title: "Data wrangling: one data table"
+author: "ECON 122"
+date: "Day 6"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL, fig.height = 3, fig.width = 6)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","babynames","dplyr")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+
+## Historical baby names (section 3.3) {.build}
+The package `babynames` contains the data set `babynames`. This data set gives name rates for births recorded by the Social Security Administration from `r min(babynames$year)` - `r max(babynames$year)` (`r max(babynames$year) - min(babynames$year) + 1` years). 
+
+```{r}
+glimpse(babynames)
+```
+
+- Over 1.8 million rows giving the names of all baby names born in any year
+- Each row specifies a:
+    + `year`
+    + `sex`
+    + `name`
+    + `n` number with a name in a given year
+    + `prop` yearly proportion with a given name (by sex). E.g. 7065 females named Mary were recorded in SSA applicants born in 1880, this makes up about 7.2% of all females applicants with 1880 birth dates.
+
+
+### 1. what does this plot show?
+
+```{r}
+ggplot(babynames, aes(x=year)) + geom_density(aes(color=sex)) 
+```
+
+### 2. What does this plot show?
+```{r}
+babynames %>% 
+  filter(name == "Tillie", sex == "F") %>% 
+  ggplot(aes(x=year)) + 
+    geom_line(aes(y=n, color=name))
+```
+
+### 3. The following command shows there are `r nrow(filter(babynames, name == "Tillie"))` years with at least one baby named Tillie. Is this statement necessarily true? (Hint: Think about what 1 row represents)
+
+```{r}
+filter(babynames, name == "Tillie")
+```
+
+### 4. What does this command do? 
+```{r}
+filter(babynames, name %in% c("Tillie","Tilly","Mathilda","Matilda"))
+```
+
+
+### 5. Write the following set of commands using one piped command. 
+```{r}
+tillies <- filter(babynames, name=="Tillie")
+summarize(group_by(tillies, sex), tillie_mean = mean(n), tillie_sd = sd(n), n_years = n())
+```
+
+### 6. Interpret the summaries given in 5.
+
+### 7. Which year did not have any babies named Tillie for female births?
+
+### 8. Counting babies
+Use the `yearSizes` data to answer the following questions. (You will need to transform this dataset to answer some questions.)
+```{r}
+yearSizes <- babynames %>% 
+  group_by(year,sex) %>%
+  summarize(n_names = n(), size = sum(n))
+yearSizes
+```
+- What do `n_names` and `size` measure?
+- Which year saw the most male babies born? female babies?
+- Find the year with the highest number of babies born (both male and female)
+- Compute the ratio of number of distinct names in a year over the number of babies born (for each sex). Then plot this versus `year`. 
+When was "diversity" in naming the lowest and highest for:
+    1. females?
+    2. males?
+    3. both males and females?
+
+### 9. Using the `babynames` data, what are the most "unisex" names (historically, most balance between males and females). 
+
+Try filtering to get more common names, e.g. so there are at least, say,  10,000 male and female occurances (each) of the name over all years in the dataset. Then you will find the "common" unisex names and not rare ones that, for example, have 1 instance of a male and 1 of a female (which would be 50% male and 50% female). 
+
