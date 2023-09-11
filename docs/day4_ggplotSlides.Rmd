@@ -84,7 +84,6 @@ ggplot(data=survey)
 
 - Aesthetics describes the mapping of variables to your graph
     - for numeric, default scale is Cartesian 
-- `aes` aesthetics can also be given in the `ggplot` command
 ```{r, fig.height=3.5}
 ggplot(data=survey, aes(x=Question.15)) 
 ```
@@ -94,10 +93,11 @@ ggplot(data=survey, aes(x=Question.15))
 - The geometry determines what form the plot has
 - What type of plot would be useful here?
     + Here a `histogram` makes sense:
-    
-```{r, fig.height=3.5}
+```{r, fig.height=2.5}
 ggplot(data=survey, aes(x=Question.15)) + geom_histogram()
 ```
+
+- also `ggplot(data=survey) + geom_histogram(aes(x=Question.15))`
 
 ## EDA for data clean up  {.build}
 
