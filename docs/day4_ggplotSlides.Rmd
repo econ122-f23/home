@@ -126,6 +126,17 @@ ggplot(data=survey, aes(y=Question.15, x=Question.16)) + geom_boxplot()
 
 - This is where ggplot shines. Very easy to change the plot 
 
+## `ggplot` vs `base r` and other languages
+
+- Typically, plots are based on the plot type
+  - for example, `base r` has `hist()` to plot histograms
+- As a data scientist, makes sense to think about data and mapping instead of plot
+- `ggplot` is a wrapper for `base r` plotting functions 
+  - allows data scientists to focus on how to display data rather than a specific plot
+  - can initialize the data and then change the plot type easily
+  - if you start off with `hist()` and want to change to `boxplot()` all the inputs are different
+      - in `ggplot` it's as easy as swapping out `geom_histogram` with `geom_boxplot`
+
 ## `ggplot` and `NA`'s  {.build}
 
 - Need to omit `NA` rows from data if you want them omitted from your graphics
