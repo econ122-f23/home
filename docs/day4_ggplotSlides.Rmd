@@ -154,7 +154,7 @@ ggplot(data=survey, aes(y=Question.15, x=Question.16)) + geom_boxplot() + coord_
 
 ## Context! Add labels {.build}
 
-- Options include `ggtitle` and `labs`, change text size too
+- Use `labs` to add labels, `theme` to change text size
 ```{r, fig.height=3.5}
 ggplot(data=survey, aes(y=Question.15, x=Question.16)) + geom_boxplot() + coord_flip() + 
   labs(title="GPA by major", x="Major Area", y="GPA") + 
