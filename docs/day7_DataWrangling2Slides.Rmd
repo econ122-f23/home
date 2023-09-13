@@ -1,0 +1,145 @@
+---
+title: "Data wrangling: multiple data tables" 
+author: "ECON 122"
+date: "Day 7"
+output: 
+  ioslides_presentation:
+    incremental: true
+    widescreen: true
+    fig_height: 4
+    fig_width: 7
+    keep_md: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL, error = TRUE)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+
+## Merging data frames {.build}
+
+- Many organizations store various types of data in different sources 
+    + different "spreadsheets" or databases
+    + think about all the info CMC has about you!
+        + registrar (grades, courses); Dean of Student (personal info); Admissions (HS, application info)
+- We need a common **key** that can ID the same individual across multiple data tables/bases. 
+    + name, ID number are common
+    + anything that uniquely IDs your units of analysis
+- Today: joining/merging tables using a common key
+
+
+## Different types of joins {.build}
+
+-  Mutating joins - combine vars from both tables
+    - `inner_join(x,y, by=c("x_key"="y_key"))`: returns all rows in `x` that have a match in `y` 
+    - `left_join(x,y, by=c("x_key"="y_key"))`: returns all rows in `x`, will fill `NA` in `y` columns with no match
+    - `right_join(x,y, by=c("x_key"="y_key"))`: returns all rows in `y`, will fill `NA` in `x` columns with no match
+    - `full_join(x,y, by=c("x_key"="y_key"))`: returns all rows from both `x` and `y`, will fill `NA` in columns with no match
+
+- Filtering joins - keep variables from left-hand table
+    - `semi_join(x,y, by=c("x_key"="y_key"))`: returns all rows from `x` where there are matching values in `y`, keeping just columns from `x`
+    - `anti_join(x,y, by=c("x_key"="y_key"))`: returns all rows from `x` where there are **not** matching values in `y`, keeping just columns from `x`
+
+## Example: class grades {.build}
+
+- I want to know how people are performing in this class relative to their average GPA
+- Load dataframe with class grades
+```{r}
+class_grades <- data.frame(student_ID=1:5,
+                           grade=c("A","A+","B-","B+","A-"),
+                           college=c("PIT","CMC","CMC","CMC","SRC"))
+class_grades 
+```
+
+## Example: class grades {.build}
+
+- I can get access to CMC students' GPAs but not the other colleges
+
+```{r}
+GPA <- data.frame(CMC_ID=c(2:4,10:11),gpa=c(2.7,4.0,3.1,3.6,3.7))
+GPA 
+```
+
+## Example: class grades {.build}
+
+- How should I join the two tables?
+    - `inner_join` seems like a good solution
+- What keys to use? 
+    - The keys have different variable names but that's OK
+
+```{r}
+inner_join(class_grades,GPA,by = c("student_ID"="CMC_ID")) 
+```
+- What are the downsides to this inner join?  
+    - I don't see my PIT and SRC students anymore
+- What if I want to compare grades **within** the class as well as **GPAs**?
+    
+## Example: class grades {.build}
+
+- Let's try a `left_join` to keep all students
+```{r}
+left_join(class_grades,GPA,by = c("student_ID"="CMC_ID")) 
+```
+- Left join will never **remove** information from the left dataframe
+    - Perhaps the fact that there **isn't** a match is important
+- Because I can't access PIT and SRC data, GPAs will be `NA` for those students
+
+## Example: class grades {.build}
+
+- What will a `right_join` give us?
+```{r}
+right_join(class_grades,GPA,by = c("student_ID"="CMC_ID")) 
+```
+- All the students that I have GPA information for, even if they are not in my class
+
+## Example: class grades {.build}
+
+- What does `full_join` do?
+```{r}
+full_join(class_grades,GPA,by = c("student_ID"="CMC_ID")) 
+```
+- All possible information
+- Dangerous if you have two very large tables
+
+
+## Example: class grades {.build}
+- What if I just want to know which rows have a match?
+    + Ex: my college variable got deleted
+```{r}
+class_grades %>% select(-college) 
+```
+```{r}
+class_grades %>% select(-college) %>% semi_join(GPA,by = c("student_ID"="CMC_ID"))
+```
+- Only keeps variables from the left table (no `GPA`)
+- Only returns rows which have a match
+    - Similar to `inner_join` but will never duplicate rows of left table
+
+## Example: class grades {.build}
+
+- What if I just want to know which rows **don't** match
+```{r}
+anti_join(class_grades,GPA,by = c("student_ID"="CMC_ID")) 
+```
+- Tells me which students don't have a GPA match (BC they are not CMC students)
+- Sometimes identifying which records don't match is the goal itself 
+    - For example, may tell you which years, states, students are missing so you can request that data
+    
+## More examples {.build}
+
+- So far: One unique ID where each ID only shows up once in the table
+- Other scenarios
+    - What if we have a table that has multiple observations per unique ID? 
+        + multiple classes per student
+    - What happens if we want to merge on multiple variables? 
+        + merge on student ID and semester
+- The activity today introduces the above two scenarios
+    

@@ -1,0 +1,257 @@
+---
+title: "Data intake and Dates" 
+author: "ECON 122"
+date: "Day 8"
+output: 
+  ioslides_presentation:
+    incremental: true
+    widescreen: true
+    fig_height: 4
+    fig_width: 7
+    keep_md: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("dplyr","readr","lubridate")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+local_edition(1)
+```
+
+## Data intake
+
+- Data from the real world may not always come in the form you expect
+- The process of importing data itself may already lead to false conclusions
+    - Data intake in R makes assumptions about how to parse raw data
+- We should always view the raw data before importing
+    - For smaller files, spreadsheets are useful
+    - For larger files, `unix` commands like `head` or `more` are useful 
+
+## Factor vs String: {.build}
+
+- Recall: factors (coded internally as integer levels) take less storage than strings
+- Sometimes mostly numeric variables contain a few character entries. 
+- What happens when we coerce into a numeric variable?
+
+## String into numeric: {.build}
+
+- Character string variable
+```{r}
+(x <- c("4", "9","2.1","oops") )
+typeof(x)
+```
+- Coerce into numeric with `as.numeric`
+```{r}
+(y <- as.numeric(x))
+typeof(y)
+```
+- Coercion correctly converts to numeric vector with NA for non-numeric
+
+## Factor into numeric: {.build}
+
+- Factor  variable
+```{r}
+(x <- factor(c("4", "9","2.1","oops")) )
+typeof(x)
+```
+- Coerce into numeric with `as.numeric`
+```{r}
+(y <- as.numeric(x))
+typeof(y)
+```
+- Coercion is incorrect: returns integer level value, not variable values
+
+## Factor into numeric: {.build}
+
+- Can get correct coercion with `readr::parse_number`
+```{r}
+y <- parse_number(as.character(x))  # vector with "problem" attribute
+typeof(y)
+as.vector(y)  # plain vector
+```
+- Coercion is now correct
+
+## `read_csv` vs. `read.csv`:  {.build}
+
+- the base R `read.csv` default setting makes all columns with characters a factor:
+    + default: `stringsAsFactors=TRUE`
+    +  Fixed in the most recent version but can still cause issues with older versions
+```{r e1}
+energy1 <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/EnergyData1516.csv",stringsAsFactors=TRUE)
+glimpse(energy1[,c("Timestamp","Musser_Hall")])
+```
+- BAD: Default reads `Timestamp` is a factor 
+    + levels will be ordered numerically/alphabetically not chronologically
+- GOOD: Musser Hall energy values are `dbl` (double)
+  
+## `read_csv` vs. `read.csv`:  {.build}
+
+- the `readr` package `read_csv` default setting makes all columns with characters a character:
+- Default: it uses the first 1000 rows to guess variable types (`guess_max`)
+    - Fixed in the most recent version but can still cause issues with older versions
+```{r e2, warning=FALSE}
+local_edition(1)
+energy2 <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/EnergyData1516.csv")
+glimpse(energy2[,c("Timestamp","Musser_Hall")])
+```
+- GOOD: Default reads `Timestamp` is a date/time type called `POSIXct` 
+- BAD: Musser Hall energy values are `logical` 
+  
+## `read_csv` vs. `read.csv`:  {.build}
+
+- Summaries for `energy1` and `energy2` are not the same!
+```{r}
+summary(energy1$Musser_Hall)
+summary(energy2$Musser_Hall)
+```
+- The first 22,243 rows in `energy1` are NA before they become numerical
+```{r}
+energy1[22238:22245,"Musser_Hall"]
+```
+
+
+## `read_csv` vs. `read.csv`:  {.build}
+
+- If `read_csv` guesses column type wrong you get a warning message:
+```{r}
+problems(energy2)
+```
+
+## `read_csv` vs. `read.csv`:  {.build}
+
+- Solution: 
+    + make sure you have the latest version
+    + check for warnings, define column types if needed
+    + or increase `guess_max` value
+
+## `read_csv` vs. `read.csv`:  {.build}
+
+- We can also explicitly specify what storage type we want
+- `Timestamp` is a `datetime` variable
+- `dayWeek` is a factor with ordered levels
+- all other read in as `double`
+```{r}
+energy <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/EnergyData1516.csv", 
+                   col_type = cols(.default = col_double(), 
+                          Timestamp = col_datetime(format = ""),
+                          dayWeek = col_factor(
+                              levels=c("Mon","Tues","Wed","Thurs","Fri","Sat","Sun"))))
+```
+- No more warning messages after reading
+
+## Dates and Times:  {.build}
+
+- R has  built-in functions to handle dates and times
+- Stores dates, times, or date-times as either:
+    + `POSIXct` type: time in seconds since start of 1970
+    + `POSIXlt` type: list of vector of time/date units
+- The `lubridate` package makes dates and times manipulations a little easier
+
+## `lubridate`: extract info {.build}
+
+- Let's look at the 5th `Timestamp` in the energy data:
+```{r}
+( stamp5 <- energy$Timestamp[5] )
+str(stamp5)
+```
+- What day of the week and day of the year was it?
+```{r}
+wday(stamp5, label=TRUE)
+yday(stamp5)
+```
+
+## `lubridate`: extract info {.build}
+
+- We can also extract date and time info:
+```{r}
+stamp5
+year(stamp5)
+month(stamp5)
+day(stamp5)
+hour(stamp5)
+minute(stamp5)
+```
+
+## `lubridate`: create dates and times {.build}
+
+- There are many variations of commands like:
+```{r}
+(mydate <- mdy("1/24/2018") )
+ymd("2018-01-24")
+ymd_hm("2018-01-24 13:32")
+```
+- date part: y=year, m=month, d=day
+- time part: h=hour, m=minute, s=second
+
+## `lubridate`: create dates and times {.build}
+
+- Also `make_date` or `make_datetime`
+```{r}
+energy %>% mutate(datetime = make_datetime(year,month,dayOfMonth,timeHour,timeMinute)) %>%
+  select(Timestamp, datetime, year,month,dayOfMonth,timeHour,timeMinute)
+```
+
+## `lubridate`: updating dates and times {.build}
+
+- Can modify an existing date with `update` 
+```{r}
+mydate
+update(mydate, year = 2020)
+update(mydate, hour=12, minute = 23)
+```
+
+## `lubridate`: measuring time {.build}
+
+- Suppose we want to see how much time has elapsed since the start of the term:
+```{r}
+firstDay<- mdy("08/28/2023")
+firstDay
+```
+- We can get a date/time with `now()` and a date with `today()`
+```{r}
+today()
+now()
+```
+
+## `lubridate`: measuring time {.build}
+
+- `interval` creates an "interval" class object that defines an interval of time (tied to specific dates)
+```{r}
+interval(firstDay, today())  
+```
+- `duration` specifies a length of time (not tied to specific dates)
+```{r}
+dminutes(2)
+dhours(1)
+ddays(1)
+```
+
+## `lubridate`: measuring time {.build}
+
+- We use an interval and duration to compute a length of time
+- How many days so far this term?
+```{r}
+interval(firstDay, today()) / ddays(1) 
+```
+- How many weeks? minutes?
+```{r}
+interval(firstDay, today()) / dweeks(1)
+interval(firstDay, today()) / dminutes(1)
+```
+
+## `lubridate`: measuring time {.build}
+
+- Can also use date/time variables:
+- Difference between first two time stamps:
+```{r}
+energy$Timestamp[1:2]
+interval(energy$Timestamp[1], energy$Timestamp[2])/dminutes(1)
+```
+- 15 minutes between readings 1 and 2
+
