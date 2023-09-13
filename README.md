@@ -94,7 +94,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
     -   quick read MDSR sections 11.1-11.3 in chapter 11 to get a "big picture" idea of some of the interactive graphing options in R.
     -   Start on PS 2 
 -   in class: 
-    -   discuss group projects
+    -   discuss [team project 1](https://github.com/econ122-f23/teamproject1)
     -   day 5 slides: [.Rmd](docs/day5_moreggplotsSlides.Rmd) [.html](https://econ122-f23.github.io/home/day5_moreggplotsSlides.html)
     -   day 5 interactive graphics slides: [.Rmd](docs/day5_IntroInteractive.Rmd) 
     -   day 5 activity: [.Rmd](activities/day5_ggplotActivity_2.Rmd) [.md](activities/day5_ggplotActivity_2.md)
