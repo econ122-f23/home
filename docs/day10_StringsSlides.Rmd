@@ -1,0 +1,362 @@
+---
+title: "Strings and regular expressions" 
+author: "ECON 122"
+date: "Day 10"
+output: 
+  ioslides_presentation:
+    incremental: true
+    transition: faster
+    widescreen: true
+    fig_height: 4
+    fig_width: 7
+    keep_md: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("dplyr","stringr","readr")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+## Strings and regular expressions  {.build}
+
+- Today we'll discuss how to work with strings
+- Oftentimes we need to search and extract certain patterns from strings    
+    - We only want to analyze tweets that mention a specific person or event
+    - We want to analyze patterns in telephone numbers from various data scraped from the web
+- The bulk of this lecture will focus on using `regular expressions` (regexp) to help us search and extract patterns
+
+## Strings  {.build}
+
+- Create strings with single or double quotes:
+```{r}
+( s1 <- "ECON 122" )
+( s2 <- 'ECON 122 is "fun"' )
+writeLines(s2)
+```
+- `s1` and `s2` are both R strings
+- `writeLines` shows the string after parsing "special characters"
+
+
+## Special characters in R  {.build}
+
+- What if I want to use only `double quotes` in `s2`?
+```{r, error=TRUE}
+( s2 <- "ECON 122 is "fun"" )   # s2 but with only double quotes
+```
+- The "escape" backslash `\` is used to escape the special use of certain characters
+      - `\"` gives a quote in a string
+```{r}
+( s3 <- "ECON 122 is \"fun\"" )   # same as s2 string
+writeLines(s3)
+
+```
+
+## Special characters in R  {.build}
+
+- So `\` allows us to `escape` the special use of characters but what if we want to use it as a regular old `backslash`?
+- What would happen if I run the code  `(s4 <- "Economics\Data Science")`?
+
+```{r, error=TRUE}
+(s4 <- "Economics\Data Science")
+```
+
+- Need to `escape` the `escape`
+```{r}
+(s4 <- "Economics\\Data Science")
+writeLines(s4)
+```
+
+## `stringr` package {.build}
+
+- Another H Wickham package used for extraction of info from strings
+- Very useful because all commands start with `str_`
+    - In RStudio, you'll see all the commands if you type `str_`
+
+## Combining strings {.build}
+
+- The `stringr` package function `str_c` combines strings with no space:
+```{r}
+x<- "Apple"
+y<- "Pen"
+str_c(x,y)
+```
+- Can specify a separator 
+```{r}
+(z <- str_c(x,y,sep="-"))
+```
+- **Note:** Different from `c` which creates a `vector`
+```{r}
+c(x,y)
+```
+
+## Splitting strings {.build}
+
+- `str_split` returns a list of substrings (character vectors)
+```{r}
+str_split(z, "-")  # separate by space " "
+```
+
+## String analysis: Length {.build}
+
+- How many characters in the string:
+```{r}
+( z <- str_c(x,y,"!", sep=" ") )
+str_length(z)
+```
+- Are spaces and punctuation counted?
+- What about special characters?
+```{r}
+( z <- str_c(x,y,"!", sep="\n") )
+str_length(z)
+```
+
+## String analysis: Subsetting {.build}
+
+- We can subset strings from the start:
+```{r}
+(z <- str_c(c("apple","pineapple"), y,sep=" ") )
+str_sub(z, start=1, end=4)
+```
+- or the end:
+```{r}
+str_sub(z, start=-3, end=-1)
+```
+
+## Regular expressions {.build}
+
+- A *regular expression* is a way to describe patterns in strings
+    - Terse and powerful, but sometimes hard to read 
+    - Not exclusive to R, also integrated into other langauges
+- What is the pattern in:
+    + time: `09:50:00`
+    + words in a sentence: `How now brown cow.`
+  
+## Finding patterns: practice using `stringr` {.build}
+
+- The helper functions `str_view` and `string_view_all` find regex matches (first and all matches)
+```{r}
+str_view(z, "p")  # find first "p"
+```
+```{r}
+str_view_all(z, "p")  # find all "p"
+```
+
+## Finding patterns using `.` (period) {.build}
+
+- Find a "2"
+```{r}
+x <- c("the time is 2:10.", "1234")
+str_view(x, "2")
+```
+
+- Find a "2" and *any* (`.`) character that follows
+```{r}
+x <- c("the time is 2:10.", "1234")
+str_view(x, "2.")
+```
+
+- What will `".2."` match?
+
+## Finding patterns using `.` (period) {.build}
+
+- What will `".2."` match?
+```{r}
+str_view(x, ".2.")
+```
+
+- What if we want to find a period `.`?
+    - Find a puncuation period: use escape `\\.` regex 
+    - Why not `\.`? `.` is not a special character in `R` so it will throw an error
+```{r}
+x <- c("the time is 2:10.", "the cost is $1.23")
+str_view(x, "\\.")
+```
+
+
+## Finding patterns using `[]` to find any occurance {.build}
+
+- Find any numbers between 0 and 9:
+```{r}
+x <- c("the time is 2:10.", "1234")
+str_view_all(x, "[0123456789]")  # same as "\\d"
+```
+
+- Numbers between 2 and 4
+```{r}
+str_view_all(x, "[2-4]")
+```
+
+## Finding patterns using `[]` to find any occurance {.build .smaller}
+
+- Explain the following result:
+```{r}
+str_view_all(x, "[0:9]")
+```
+```{r}
+str_view_all(x, "[\\d:]")
+```
+```{r}
+str_view_all(x, "\\d:")
+```
+- `[]` is any within
+
+## Finding patterns using `[^]` to avoid occurances {.build}
+
+- Explain the following result:
+```{r}
+str_view_all(x, "[^\\d:]")
+```
+
+- To use `^` for "everything except this", it needs to be used in the brackets `[]`
+
+## Finding patterns using `[^]` to avoid occurances {.build}
+
+- What happens if we forget brackets?
+```{r}
+str_view_all(x, "^t")
+```
+```{r}
+str_view_all(x, "[^t]")
+```
+
+## Finding patterns using anchors (`^` and `$`) {.build}
+
+- Anchors look for matches at the start `^` or end `$`.
+- Start or end?
+```{r}
+str_view(x, "^\\d")
+```
+```{r}
+str_view(x, "\\d$")
+```
+
+## Finding patterns using  alternatives {.build}
+
+- Use `|` for `OR` statements
+```{r}
+str_view(x,"10|12")
+```
+```{r}
+str_view_all(x,".(0|2)")
+```
+
+- `()` are used for grouping expressions  
+- Similar to mathematical expressions: use them to avoid ambiguity
+
+
+
+
+## Finding patterns using repetition {.build}
+
+- A pattern followed by the number  of matches:
+    + `?`: 0 or 1
+    + `+`: 1 or more
+    + `*`: 0 or more
+    + `{n}`: exactly `n` times
+    + `{n,m}`: between `n` and `m` times
+```{r}
+str_view_all(c("color","colour","collar"), "colou?r")
+```
+
+## Finding patterns using repetition {.build}
+
+- Find all the numbers in a sentence
+```{r}
+str_view_all("I love ECON122, I'm sad there are only 15 classes left.","[\\d]+")
+```
+
+
+- Find the last word in a sentence
+```{r}
+str_view_all("that top cat.", "[a-z]+\\.")
+```
+
+## Analyzing strings {.build}
+
+- We can now analyze strings using some common functions
+- `str` is a vector of strings and `regex` defines the pattern of interest:
+    + `str_detect(str, regex)`: returns logical vector if match
+        - `str_subset(str, regex)`: returns `str` entries that match
+    + `str_count(str, regex)`: counts the number of detections 
+    + `str_replace(str, regex, replstr)`: replaces a pattern with a new one
+    + `str_split(str, regex)`: splits a string into a list by `regex` 
+    + `str_extract(str, regex)`:  extracts patterns from strings
+    + `str_locate(str, regex)`: gives starting and ending position of matches
+- extract, replace and locate have `all` versions
+
+## Detecting {.build}
+
+- We can detect the occurrence of substrings within a larger string:
+- Q: Does the string "pen" show up in ``r z``?
+```{r}
+z
+str_detect(z, "pen")
+```
+- Why didn't this work?
+- Try again with `str_to_lower`
+```{r}
+str_detect(str_to_lower(z), "pen")
+```
+
+## Splitting {.build}
+
+- split into "words": 
+```{r}
+str_split("That top cat. It sat on a hat.","\\s") 
+```
+
+- split into "sentences":
+```{r}
+str_split("That top cat. It sat on a hat.","\\.\\s") 
+```
+
+## Subset {.build}
+
+- Let's find the "words" that start with t
+```{r}
+(mywords <- str_split("That arty top cat. It sat on a hat."," "))
+(twords <- str_subset(unlist(mywords), "^[Tt][a-z]+"))
+```
+
+## Replacing {.build}
+
+- In many cases, non-letter characters can be a nuisance
+
+- how long are the words?
+```{r}
+(mywords <- unlist(mywords) )
+str_length(mywords)
+```
+- remove non-letter characters: not a letter `"[^[:alpha:]]"`
+```{r}
+(mywords2 <- str_replace_all(mywords, "[^[:alpha:]]","") )
+str_length(mywords2)
+```
+
+
+## Extracting {.build}
+
+- extract all numbers
+```{r}
+x
+str_extract(x, "[\\d]" )
+```
+
+## Extracting {.build}
+
+- all numbers  in a string:
+```{r}
+x
+str_extract_all(x, "[\\d]" ) # digits 
+str_extract_all(x, "[\\d]+" )  # numbers
+```
+
+- what will `"[\\d]{1,2}:[\\d]{2}"` extract?
+

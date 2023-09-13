@@ -1,0 +1,273 @@
+---
+title: "Iterations with `apply` and `do`" 
+author: "ECON 122"
+date: "Day 11"
+output: 
+  ioslides_presentation:
+    incremental: true
+    transition: faster
+    widescreen: true
+    keep_md: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL, warning=FALSE, error=FALSE, fig.width = 9)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr","stringr","readr","readxl","tidyr","lubridate")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+## Vectorized language {.build}
+
+- R is a vectorized language
+    + avoid loops by applying operations to each element of a vector
+```{r}
+x <- c(10,20,30,40)
+x * -1
+```
+- The `for` loop version:
+```{r}
+out <- NULL
+for (i in 1:4)
+  { out[i] <- x[i]*-1 }
+out
+```
+
+## Vectorized language {.build}
+
+- Many functions are vectorized
+- E.g. `packageCheck` chunk in my slides
+    - `install.packages` is a vectorized function
+```{r, eval=FALSE}
+# what packages are needed?
+mypacks <- c("ggplot2","dplyr","stringr","readr","readxl","tidyr") 
+# installs each package in the vector mypacks
+install.packages(mypacks)  
+```
+- But `library` is not a vectorized function:
+```{r, error=TRUE}
+library(mypacks)  # this command fails
+```
+
+## Why do we need iteration?
+
+- For the most part, `dplyr` commands `group_by` and `summarize` allow us to calculate various statistics we need
+- For more complicated procedures (coming up in second half) we might want to apply a more general `function`. 
+    - Ex: Performing a non-standard operation (combining all strings in a group) 
+    - Ex: Returing a vector or list of values (10,...,90 %ile) 
+    - Ex: Applying a statistical model (least squares,machine learning) 
+- Mostly setting us up for the second half of the course
+
+## `apply` family of commands
+
+- R has a family of commands that apply a function to different parts of a vector, matrix or data frame.
+    + `apply(matrix, MARGIN, FUN)`: applies the function `FUN` to the matrix `MARGIN` given (1=row, 2=column). Returns an atomic **vector** or **matrix**
+        - Ex: Calcualting the mean of all columns (`MARGIN`=2)
+    + `lapply(vector, FUN)`: applies the `FUN` to each element in the vector (or list). Returns a list with length equal to that of the vector
+        - Ex: Returing a vector or list of values (10,...,90 %ile) 
+    + `sapply`: works like `lapply` but returns a vector (so `FUN` can only return one value)
+        - Ex: Taking the mean of each group
+
+## `apply`: stats for a data frame {.build .smaller}
+-  Read in `EnergyData1516.csv`: Remember columns are buildings
+```{r, echo=TRUE}
+energy <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/EnergyData1516.csv", 
+                   col_types = cols(Timestamp = col_datetime(), 
+                                    dayWeek = col_factor(levels=c("Mon","Tues","Wed","Thurs","Fri","Sat","Sun")) , 
+                                    .default = col_double()))
+glimpse(energy)
+```
+
+## `apply`: stats for a data frame {.build}
+
+- What if we want median energy usage for all buildings (**columns**) in `EnergyData1516`?
+    - KWH values in columns 9:90
+    - all columns have the same data type, R will coerce cols `9:90` into a matrix 
+    - use **margin 2** to apply the function (`median`) to the columns of the matrix
+```{r}
+medianKWH <- apply(energy%>%select(9:90), MARGIN=2, median, na.rm=TRUE) 
+medianKWH[1:6]
+```
+
+## `lapply`: great command for avoiding `for` loops {.build}
+
+- `lapply` is very useful for vectorizing commands that aren't vectorized
+    - More general than `apply` because `apply` takes a `vector` or `matrix`
+- E.g. R chunk `packageCheck`: 
+    + applying the function `library` to each entry in `mypacks`
+```{r, eval=FALSE}
+# packages to load
+mypacks <- c("ggplot2","dplyr","stringr","readr","readxl","tidyr")
+# run the library command on all mypack entries: 
+lapply(mypacks, library, character.only=TRUE)  
+```
+- `character.only=TRUE` is a `library` argument
+
+## `lapply`: getting quantiles {.build}
+
+- Let's go to the narrow version of energy
+
+```{r}
+energy_narrow <- energy %>% mutate(month = month(month, label=TRUE)) %>%
+  gather(key=building, value= energyKWH, 9:90) 
+energy_narrow %>% select(building, energyKWH, dayWeek, month) %>% glimpse
+```
+- Goal: for some grouping of the data, get percentiles 10-90 for each group
+```{r, eval=FALSE}
+lapply(group_name, myfunction) 
+# returns 9 percentiles for each group
+```
+
+
+## `lapply`: getting quantiles {.build}
+
+- We need to crate a function to do this because it is non-standard
+- `qfun`: function to create quantiles 
+    - input: building string name, data frame
+    - output: a data frame with building name, quantiles and quantile identifier
+```{r}
+qfun <- function(bld, data) {
+  # get KWH measures for bld
+  kwh <- data %>% filter(building == bld) %>% select(energyKWH)
+  # get quantiles .1 thru .9
+  q <- quantile(kwh$energyKWH, probs = seq(.1, .9, by = .1), na.rm=TRUE)
+  # make data frame
+  data_frame(building = bld, 
+             q, 
+             p = seq(.1,.9,by=.1), 
+             qtype = str_c("Perc", 100*seq(.1,.9,by=.1),"%"))
+}
+```
+
+
+## `lapply`: getting quantiles {.build}
+
+- Check `qfun` for one building 
+```{r}
+qfun("Center_for_Mathematics_&_Computing", energy_narrow)
+```
+
+
+
+## `lapply`: getting quantiles {.build}
+
+- To apply `qfun` to all buildings, need a vector of building names from the `building` variable: 
+```{r}
+bld_names <- unique(energy_narrow$building)
+length(bld_names)
+bld_names[1:10]
+``` 
+
+
+## `lapply`: getting quantiles {.build}
+
+- For each entry in the vector `bld_names`, run our quantile function `qfun()`
+    + add `qfun` argument `data=energy_narrow` to the `lapply` command
+```{r}
+qlist <- lapply(bld_names, FUN = qfun, data = energy_narrow)
+```
+- What is returned?!
+```{r}
+str(qlist)
+```
+
+## `lapply`: getting quantiles {.build}
+
+- `qlist` is a list of 82 data frames, one for each building
+```{r}
+bld_names[1]
+qlist[[1]]
+```
+
+
+## `lapply`: getting quantiles {.build}
+
+```{r}
+bld_names[82]
+qlist[[82]]
+```
+
+## `lapply`: getting quantiles {.build}
+
+- The  `dplyr` command `bind_rows()` coerces a list of similar data frames into one data frame
+    - this is why I made `qfun` return a data frame!
+
+```{r}
+82*9  # number of rows in qdf
+qdf <- qlist %>% bind_rows() %>% print()
+```
+
+## `lapply`: getting quantiles {.build}
+
+```{r, fig.height=4}
+qdf %>% filter(building %in% c("Sayles-Hill" ,"Language_&_Dining_Center", "Olin_Hall_of_Science"))  %>%
+  ggplot(aes(x=q, y=p*100, color=building)) +
+  geom_point() + geom_line(aes(group=building)) + labs(y="Percentile (%)",x="KWH") +
+  scale_y_continuous(breaks=seq(10,90,by=10))
+```
+
+## `do` in `dplyr`{.build}
+
+- the previous `lapply` can't quickly be generalized to other groupings
+    - e.g. get quantiles by month? or day of the week?
+    - `qfun` needed to `filter` by `building`
+- the `do` command in `dplyr` lets you apply a function to the groups of a data frame:
+- Idea:
+    - write a function `FUN` for a (hypothetical) subsetted version of the data
+    - `FUN` must return a data frame or objects in a list 
+    - `group_by` to define a subsetted data frame
+    - `do(FUN)` runs the `FUN` on the data frames defined by `group_by`
+
+## `do` in `dplyr`: getting quantiles {.build}
+
+- Redo quantile example with modified function (no need to filter groups):
+```{r}
+qfun2 <- function(data) {
+  # get quantiles .1 thru .9
+  q <- quantile(data$energyKWH, probs = seq(.1, .9, by = .1), na.rm=TRUE)
+  # make data frame
+  data_frame(q, 
+             p = seq(.1,.9,by=.1), 
+             qtype = str_c("Perc", 100*seq(.1,.9,by=.1),"%"))
+}
+```
+
+## `do` in `dplyr`: getting quantiles {.build}
+
+- group by building 
+- then `do(qfun2(data = .))` where `.` will be filled by subsets of the data defined by the groups
+```{r}
+qdf2 <- energy_narrow %>%
+  group_by(building) %>%
+  do(qfun2(data = .))
+qdf2  # done! same as qdf data!
+```
+
+## `do` in `dplyr`: getting quantiles {.build}
+
+- group by building *and* day of the week 
+```{r, cache=TRUE}
+qdf3 <- energy_narrow %>%
+  group_by(building, dayWeek) %>%
+  do(qfun2(data = .))
+qdf3  
+```
+
+## `do` in `dplyr`: getting quantiles  {.build}
+
+```{r, echo=FALSE, fig.height=5.5}
+qdf3 %>% filter(building %in% c("Sayles-Hill" ,"Language_&_Dining_Center", "Olin_Hall_of_Science"))  %>%  ggplot(aes(x=q, y=p*100, color=building)) +
+  geom_point() + geom_line(aes(group=building)) + labs(y="Percentile (%)",x="KWH") +
+  scale_y_continuous(breaks=seq(10,90,by=10)) + facet_wrap(~dayWeek)
+```
+
+## Summary
+
+- `apply()` - use if you have a matrix
+- `lapply()` - much more general application (ie, can use for `library()`)
+- `dplyr::do()` - applying custom functions to the framework of `dplyr` `group_by`

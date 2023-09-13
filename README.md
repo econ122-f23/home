@@ -141,4 +141,45 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
     -   day 8 slides: [.Rmd](docs/day8_DataIntakeSlides.Rmd) [.html](https://econ122-f23.github.io/home/day8_DataIntakeSlides.html)
     -   day 8/9 activity: [.Rmd](activities/day0809_TidyDataActivity.Rmd) [.md](activities/day0809_TidyDataActivity.md)
           - solutions: [.Rmd](activities/solutions/day08_TidyDataActivity_Solution.Rmd) [.md](activities/solutions/day08_TidyDataActivity_Solution.md)
+------------------------------------------------------------------------
+### Week 6 (10/02) 
+
+**Monday** (`tidy` data: reshaping with `gather` and `spread`)
+
+-   before class:
+    -   read MDSR sections 5.1-5.3
+-   in class:
+    -   day 9 slides: [.Rmd](docs/day9_TidyDataSlides.Rmd) [.html](https://econ122-f23.github.io/home/day9_TidyDataSlides.html)
+    -   continue day 8/9 activity
+          - solutions: [.Rmd](activities/solutions/day0809_TidyDataActivity_Solution.Rmd) [.md](activities/solutions/day0809_TidyDataActivity_Solution.md)
+
+**Wednesday** (Strings and regular expressions)
+
+-   before class:
+    -   read Grolemund/Wickham [chapter 14](http://r4ds.had.co.nz/strings.html) on strings and regular expressions
+    -   finish up homework 4 - due Monday
+        -   to tackle problem 4 Q2, make sure to review the `lubridate` examples in the day 8 slides and [WG section 16.2.2](http://r4ds.had.co.nz/dates-and-times.html#from-individual-components).
+-   in class: 
+    -   [exam explanation](exam1.md)
+    -   day 10 slides: [.Rmd](docs/day10_StringsSlides.Rmd) [.html](https://econ122-f23.github.io/home/day10_StringsSlides.html)
+    -   day 10 activity: [.Rmd](activities/day10_stringsActivity.Rmd) [.md](activities/day10_stringsActivity.md)
+        - solutions: [.Rmd](activities/solutions/day10_stringsActivity_Solution.Rmd) [.html](https://econ122-f22.github.io/home/day10_stringsActivity_Solution.html)
+        
+------------------------------------------------------------------------
+### Week 7 (10/09)
+        
+**Monday** (Iteration)
+-   before class:
+    -   read MDSR section 5.4
+-   in class:
+    -   day 11 slides: [.Rmd](docs/day11_IterationsSlides.Rmd)  [.html](https://econ122-f22.github.io/home/day11_IterationsSlides.html)
+    -   day 11 activity: [.Rmd](activities/day11_IterationActivity.Rmd) [.md](activities/day11_IterationActivity.md)
+        - solutions: [.Rmd](activities/solutions/day11_IterationActivity_Solution.Rmd) [.md](activities/solutions/day11_IterationActivity_Solution.md)
+
+**Wednesday**
+-   before class:
+    -   study for exam 1
+-   in class:
+    -   take exam 1
+------------------------------------------------------------------------
 

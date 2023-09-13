@@ -1,0 +1,217 @@
+---
+title: "Tidy data: restructuring" 
+author: "ECON 122"
+date: "Day 9"
+output: 
+  ioslides_presentation:
+    incremental: true
+    widescreen: true
+    fig_height: 4
+    fig_width: 7
+    keep_md: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","babynames","dplyr","tidyr","readr")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+## Two main ways to structure a dataset  {.build}
+
+1. `wide` data typically represent unique variables via columns (in extreme cases, may have more columns than rows) 
+2.  `narrow\long` data represent values in columns but each row represents a different case (typically has more rows than columns)
+- Today we will learn how to convert a dataset from one type to the other and vice versa 
+
+## Typical "spreadsheet" data: wide `babynames`  {.build}
+
+```{r,echo=FALSE}
+babyname_wide <- babynames%>% filter(name %in% c("Anna","Mary","James")) %>% select(-prop) %>% spread(key=year,value=n) 
+babyname_wide[1:5,1:10]
+```
+- rows: unique name/sex combo
+- columns: many, many columns containing the same type of value measured in a different year
+
+- When is this format useful? 
+
+
+##  tidy data: narrow `babynames` {.build}
+
+<div class="columns-2">
+```{r,echo=FALSE}
+babynames %>% print(n=8)
+```
+
+
+- rows: each `case` refers to unique name/sex/year combo
+- columns: `variables` containing the same type of value for each row
+    + count/prop for each case
+- when is this format useful? 
+</div>
+
+
+## Tidy Data 
+
+- more long than wide
+- Pros:
+    + scalable, easier to add more variables and join other tables
+        - How would `prop` be added to "wide" `babynames` format?
+    +  more efficient storage/retrieval 
+    + usually easier to analyze (graph, model, etc)
+    
+- Cons: 
+    + harder to "see" all data in spreadsheet
+- Management of data
+    + done via code, not within spreadsheet app
+    + fits our philosophy of "reproducibility"  
+    
+
+## Reshaping data: wide format {.build}
+
+- Here are 2014 and 2015 grad rates for 3 schools (cases):
+
+```{r, echo=FALSE}
+grad_wide<- data.frame(school=c("Aitkin","Bemidji","Chaska"), gradRate_2015=c(93.0,86.2,96.2),gradRate_2014=c(94.6,83.2,92.7),region=c("northern","northern","metro"))
+grad_wide
+```
+
+- We want to analyze graduation trends by year
+
+- How would we plot this data?
+    - `ggplot(data,aes(x=year,y=gradRate))`
+
+- We can convert data between wide and narrow (long) formats to suit our analysis needs
+
+## Reshaping data: from wide to narrow {.build}
+
+- The `tidyr` package let's us go between narrow and long formats
+- `gather(wide, key=, value=, ..cols to gather..)`
+    + `key` is the **(new)** variable name that will ID cases
+    + `value` is the **(new)** variable name given to the gathered values
+    + `cols to gather`: comma separated names of columns to gather
+- any variables that are not gathered will have values repeated
+
+## Reshaping data: wide to narrow  {.build}
+
+- Our values to fill are grad rates and our cases will be defined by school/year combinations so `year` is the `key` (`school` is already a variable):
+```{r, echo=TRUE}
+grad_narrow <- gather(grad_wide, key = year, value=gradRate, gradRate_2015, gradRate_2014)
+grad_narrow
+```
+- The year variable is not quite a number though...
+
+## Reshaping data: `parse_number` {.build}
+
+- We can use the `readr` package's command `parse_number` to clean up `year` levels
+    - drops non-numerics before/after first numeric value(s)
+```{r}
+grad_narrow <- grad_narrow %>% mutate(year=parse_number(year))
+grad_narrow
+```
+
+## Plotting grad rates
+
+```{r}
+ggplot(grad_narrow, aes(x=year,y=gradRate)) + geom_line(aes(color=school))+
+  geom_point(aes(color=school,shape=school)) + labs(x="Year",y="Graduate Rate") +
+  scale_x_continuous(breaks=c(2014,2015))
+```
+
+## Reshaping data: wide format {.build}
+
+- What about `wide` data with two time varying variables? 
+- Here are 2014 and 2015 4- and 6-year grad rates for 3 schools (cases):
+
+```{r, echo=FALSE}
+grad_wider<- data.frame(school=c("Aitkin","Bemidji","Chaska"), gradRate4_2015=c(93.0,86.2,96.2),gradRate4_2014=c(94.6,83.2,92.7),region=c("northern","northern","metro"), gradRate6_2015 = c(93.5,90.3, 98.4), gradRate6_2014 = c(94.5, 88.4, 97.8))
+grad_wider %>% as_tibble()
+```
+
+
+## Reshaping data: wide to narrow  {.build}
+
+- Our values to fill are grad rates and our cases will be defined by school/year combinations so `year` is the `key`:
+```{r, echo=TRUE}
+grad_narrower <- gather(grad_wider, key = year, value=gradRate, c(2,3,5,6))
+grad_narrower %>% as_tibble() %>% print(n=7)
+```
+- What is the next step before calling `ggplot`? 
+
+## Reshaping data: wide to narrow  {.build}
+
+- There are *two* variables contained in `year`: 4- vs. 6- year rate and year
+    - `tidyr` package `separate` command
+```{r}
+grad_narrower <- grad_narrower %>% separate(year, into=c("type","year"), sep="_")
+grad_narrower %>% as_tibble()
+```
+
+## Plotting grad rates (6 year) {.build}
+
+```{r}
+grad_narrower %>% filter(type=="gradRate6") %>%
+ggplot(aes(x=as.numeric(year),y=gradRate)) + geom_line(aes(color=school))+
+  geom_point(aes(color=school,shape=school)) + labs(x="Year",y="6 year Graduation Rate") +
+  scale_x_continuous(breaks=c(2014,2015)) 
+```
+
+## Plotting grad rates (layer using `linetype`){.build}
+
+```{r, fig.height=3.8,fig.width=7}
+ggplot(grad_narrower, aes(x=as.numeric(year),y=gradRate)) + 
+  geom_line(aes(color=school, linetype=type))+
+  geom_point(aes(color=school,shape=school)) + labs(x="Year",y="Graduate Rate") +
+  scale_x_continuous(breaks=c(2014,2015)) + 
+  scale_linetype_discrete(labels=c("4 year","6 year"))
+```
+
+## Reshaping data: narrow to wide {.build}
+
+- the `spread` command can convert narrow data into wide data
+- `spread(narrow, key=, value=)`
+    + `key` is the (existing) variable that will be used to name the new variables
+    + `value` is the (existing) variable whose values will fill the new columns
+    + if `key` has numeric values, add `sep="_"` to get the `key` row name attached to numeric values
+```{r}
+grad_narrow
+```
+## Reshaping data: narrow to wide {.build}
+
+```{r}
+spread(grad_narrow, key=year, value=gradRate)
+```
+- columns with numeric names are more difficult to work with so add a `sep` argument:
+```{r}
+spread(grad_narrow, key=year, value=gradRate, sep="_")
+```
+
+## Reshaping data: narrow to wide {.build}
+- What if two variables (`type` and `year`) identify grad rates
+
+```{r}
+grad_narrower
+```
+
+
+## Reshaping data: narrow to wide {.build}
+
+- one way: `unite` into one variable
+- default separator is `"_"`
+
+```{r}
+grad_narrower2 <-  unite(grad_narrower, key, type, year) 
+grad_narrower2
+```
+
+## Reshaping data: narrow to wide {.build}
+
+- Then spread with the united variable as key
+```{r}
+spread(grad_narrower2, key=key, value=gradRate) %>% as_tibble()
+```
