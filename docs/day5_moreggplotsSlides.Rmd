@@ -15,7 +15,7 @@ knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=
 ```
 
 ```{r packageCheck, include=FALSE}
-mypacks <- c("ggplot2","mapproj","dplyr")  # what packages are needed?
+mypacks <- c("ggplot2","mapproj","dplyr","scales")  # what packages are needed?
 packs <- installed.packages()   # find installed package list
 install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
 if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
@@ -28,18 +28,31 @@ survey <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/Survey
 ```
 - So far our main variable of interest has been continuous (GPA)
 - How do we plot data that is categorical?
-- We want to analyze political comfort level (Q9)
+- We want to analyze political comfort level (Q9) by religious group (Q8)?
 ```{r, fig.height=3.5, fig.width=8}
+survey <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/Survey.csv")
 head(survey$Question.9)
+head(survey$Question.8)
 ```
 
 
 ## Bar graphs {.build}
 
-How does political comfort level (Q9) vary by religious group (Q8)?
+- We can use `geom_bar`
 ```{r, fig.height=3.5, fig.width=8}
-ggplot(survey, aes(x=Question.8, fill=Question.9)) + geom_bar(position="fill")
+ggplot(survey, aes(x=Question.8, fill=Question.9)) + geom_bar() +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2))
 ```
+
+## Bar graphs {.build}
+
+- The default for `geom_bar` is to sum all observations
+- If we want proportions instead use `position="fill"`
+```{r, fig.height=3.5, fig.width=8}
+ggplot(survey, aes(x=Question.8, fill=Question.9)) + geom_bar(position="fill") +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2))
+```
+
 
 ## `geom_bar` from summarized data {.build}
 
@@ -154,8 +167,7 @@ str(ACS)
     - But need to make sure the state names in `region` are the **same**
 ```{r, fig.height=2.5}
 ggplot() + coord_map() + 
-  geom_map(data=ACS, aes(map_id = region, fill = PercentInState), map = MainStates) +
-  expand_limits(x=MainStates$long, y=MainStates$lat) + ggtitle("% Born in State")
+  geom_map(data=ACS, aes(map_id = region, fill = PercentInState), map = MainStates) + expand_limits(x=MainStates$long, y=MainStates$lat) + ggtitle("% Born in State")
 ```
 
 ## Cloropleth maps using `geom_map` {.build}
@@ -218,21 +230,7 @@ mymap2 <- ggplot() + coord_map() +
 
 - Sequential choice (default) doesn't highlight deviations from overall median income
 ```{r, fig.height=3.7}
-mymap2 + scale_fill_distiller(palette = "Oranges")
-```
-
-## Color for numeric variables {.build}
-
-- change `type="div"` and color `palette`
-```{r, fig.height=3.7}
-mymap2 + scale_fill_distiller(type="div", palette = "RdYlBu")
-```
-
-## Color for numeric variables {.build}
-
-- can switch direction of colors
-```{r, fig.height=3.7}
-mymap2 + scale_fill_distiller(type="div", palette = "RdYlBu", direction = 1)
+mymap2 + scale_fill_distiller()
 ```
 
 ## Color for numeric variables {.build}
@@ -241,28 +239,4 @@ mymap2 + scale_fill_distiller(type="div", palette = "RdYlBu", direction = 1)
 ```{r, fig.height=3.7}
 mymap2 + scale_fill_gradient2(midpoint = 0, low="red", high="blue", name="Difference ($)")
 ```
-
-## Color for categorical variables {.build}
-
-- Another `fill` color used!
-```{r, fig.height=3.5}
-mybar <- ggplot(mca, aes(x=year, y=percent, fill=meets)) +
-  geom_bar(stat = "identity", position = "fill")
-mybar + scale_fill_brewer()
-```
-
-## Color for categorical variables {.build}
-
-- Could use a diverging color
-```{r, fig.height=3.5}
-mybar + scale_fill_brewer(palette = "Spectral", direction=-1)
-```
-
-## Color for categorical variables {.build}
-
-- can also manually fill colors
-```{r, fig.height=3.5}
-mybar + scale_fill_manual(values=c("blue", "green","yellow","red")) 
-```
-
 
