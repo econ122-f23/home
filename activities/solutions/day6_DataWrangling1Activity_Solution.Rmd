@@ -1,0 +1,218 @@
+---
+title: "Data wrangling: one data table"
+author: "ECON 122"
+date: "Day 6"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL, fig.height = 3, fig.width = 6)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","babynames","dplyr")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+
+## Historical baby names (section 3.3) {.build}
+The package `babynames` contains the data set `babynames`. This data set gives name rates for births recorded by the Social Security Administration from `r min(babynames$year)` - `r max(babynames$year)` (`r max(babynames$year) - min(babynames$year) + 1` years). 
+
+
+```{r}
+glimpse(babynames)
+```
+
+- Over 1.8 million rows giving the names of all baby names born in any year
+- Each row specifies a:
+    + `year`
+    + `sex`
+    + `name`
+    + `n` number with a name in a given year
+    + `prop` yearly proportion with a given name (by sex). E.g. 7065 females named Mary were recorded in SSA applicants born in 1880, this makes up about 7.2% of all females applicants with 1880 birth dates.
+
+### 1. what does this plot show?
+
+```{r}
+ggplot(babynames, aes(x=year)) + geom_density(aes(color=sex)) 
+```
+
+*answer:* Number of *distinct* baby names assigned by year, the height represents the number of male/female names in a given year. (More creative parents over time? Or larger, more diverse population?)
+
+### 2. What does this plot show?
+```{r}
+babynames %>% 
+  filter(name == "Tillie", sex == "F") %>% 
+  ggplot(aes(x=year)) + 
+    geom_line(aes(y=n, color=name))
+```
+
+*answer:* The plots the yearly count `n` vs `year`, so we are seeing popularity of this name over time. The biggest spike in popularity occured just prior to 1920.
+
+### 3. The following command shows there are `r nrow(filter(babynames, name == "Tillie"))` years with at least one baby named Tillie. Is this statement necessarily true? (Hint: Think about what 1 row represents)
+
+```{r}
+filter(babynames, name == "Tillie")
+```
+
+
+*answer:* We know that the maximum number of years is `r max(babynames$year) - min(babynames$year) + 1` years so it doesn't make sense that there are more years in which a Tillie was born. The issue is that we are double counting Males and Females. 
+
+```{r}
+babynames %>% filter(name == "Tillie") %>% 
+  select(year) %>% 
+  distinct() %>% 
+  nrow(.)
+```
+
+
+Let's filter by Tillie and male:
+```{r}
+filter(babynames, name == "Tillie" & sex == "M")
+```
+There are `r nrow(filter(babynames, name == "Tillie" & sex == "M"))` years with male Tillies recorded, `r nrow(filter(babynames, name == "Tillie" & sex == "F"))` years with female Tillies. 
+
+
+### 4. What does this command do? 
+```{r}
+filter(babynames, name %in% c("Tillie","Tilly","Mathilda","Matilda"))
+```
+
+*answer:* filters the data to only contain names in the vector given above.
+
+
+### 5. Write the following command using piping:
+```{r}
+tillies <- filter(babynames, name=="Tillie")
+summarize(group_by(tillies, sex), tillie_mean = mean(n), tillie_sd = sd(n), n_years = n())
+```
+
+*answer:*
+```{r}
+tilliesSum <- babynames %>% filter(name=="Tillie") %>%
+  group_by(sex) %>%
+  summarize(tillie_mean = mean(n), tillie_sd = sd(n), n_years = n())
+tilliesSum
+```
+
+### 6. Interpret the summaries given in 5.
+
+*answer:* For the `r tilliesSum[1,4]` years when female Tillies were recorded, the average number of Tillies born in a year was about `r round(tilliesSum[1,2],1)` (sd = `r round(tilliesSum[1,3],1)`). For the `r tilliesSum[2,4]` years with male Tillies recorded, the average number born in a year was about `r round(tilliesSum[2,2],1)` (sd=`r round(tilliesSum[2,3],1)`).
+
+### 7. Which year did not have any babies named Tillie for female births?
+
+*answer:* Group by `year` then summarize to count # Tillies that year and look for counts equal to 0
+```{r}
+babynames %>%
+  filter(sex == "F") %>%
+  group_by(year) %>%
+  summarize(TillieYear = sum(name == "Tillie")) %>%
+  filter(TillieYear == 0)
+```
+
+
+### 8. Counting babies
+Use the `yearSizes` data to answer the following questions. (You will need to transform this dataset to answer some questions.)
+```{r}
+yearSizes <- babynames %>% 
+  group_by(year,sex) %>%
+  summarize(n_names = n(), size = sum(n))
+yearSizes
+```
+
+- What do `n_names` and `size` measure?
+
+*answer:* `n_names` counts the number of distinct male and female names given to babies born in a year. `size` records the total number of male and female births recorded in a year.
+
+- Which year saw the most male babies born? female babies?
+
+```{r}
+yearSizes %>% 
+  filter(sex == "M") %>% 
+  arrange(desc(size))
+yearSizes %>% 
+  filter(sex == "F") %>% 
+  arrange(desc(size))
+
+```
+*answer:* 1957 for both male and females
+
+- Find the year with the highest number of babies born (both male and female)
+
+```{r}
+yearSizes %>% 
+  group_by(year) %>% 
+  summarize(size_all = sum(size)) %>% 
+  arrange(desc(size_all))
+```
+*answer:* since the year is the same for both male and female, it will be 1957 again.
+
+- Compute the ratio of number of distinct names in a year over the number of babies born (for each sex). Then plot this versus `year`. 
+When was "diversity" in naming the lowest and highest for:
+    1. females?
+    2. males?
+    3. both males and females?
+    
+*answer:* For females, lowest name diversity was 1954 and highest was 2010 while for males lowest was 1956 and highest was 1901. When combining both sexes, the lowest diversity was 1956 and highest was 1881. 
+```{r}
+yearSizes <- yearSizes %>% 
+  mutate(ratio = n_names/size) 
+yearSizes %>% 
+  ggplot(aes(x=year,y=ratio)) + 
+  geom_line(aes(color=sex))
+```
+
+One way to get the min/max years by sex is to just filter and arrange:
+```{r}
+yearSizes %>% filter(sex == "M") %>%
+  arrange(ratio) %>% print(n=1)
+yearSizes %>% filter(sex == "M") %>%
+  arrange(desc(ratio)) %>% print(n=1)
+yearSizes %>% filter(sex == "F") %>%
+  arrange(ratio) %>% print(n=1)
+yearSizes %>% filter(sex == "F") %>%
+  arrange(desc(ratio)) %>% print(n=1)
+```
+
+We can use `summarize` to pull the min and max values, but this needs to be done outside of the current `group_by` of `year` that `yearSizes` has associated with it. We need to ungroup to get overall min/max and not group min/max. Otherwise your min/max stats are computed **for each year** not **across all years**
+```{r}
+yearSizes %>% print(n=2)  # has year grouping
+yearSizes %>% filter(sex == "M") %>%
+  ungroup() %>% # get rid of grouping
+  filter(ratio == min(ratio) | ratio == max(ratio))
+yearSizes %>% filter(sex == "F") %>%
+  ungroup() %>% 
+  filter(ratio == min(ratio) | ratio == max(ratio))
+```
+
+
+Get overall ratio means combining M/F counts for each year:
+```{r}
+yearSizes %>% 
+  summarize(n_names_tot = sum(n_names), size_tot = sum(size))%>%  
+  mutate(ratio = n_names_tot/size_tot)  %>% 
+  ungroup() %>% 
+  filter(ratio == min(ratio) | ratio == max(ratio))
+```
+
+### 9. Using the `babynames` data, what are the most "unisex" names (historically, most balance between males and females). 
+
+Try filtering to get more common names, e.g. so there are at least, say,  10,000 male and female occurances (each) of the name over all years in the dataset. Then you will find the "common" unisex names and not rare ones that, for example, have 1 instance of a male and 1 of a female (which would be 50% male and 50% female). 
+
+```{r}
+babynames %>% group_by(name,sex) %>%
+  summarize(tot_n_bysex = sum(n)) %>% 
+  group_by(name) %>%
+  mutate(name_prop = tot_n_bysex/sum(tot_n_bysex), abs_diff = abs(.5 - name_prop)) %>% 
+  filter(tot_n_bysex > 10000) %>%
+  arrange(abs_diff,name) %>%
+  print(n=50)
+
+# check work!
+babynames %>% filter(name %in% c("Kerry","Jessie", "Riley")) %>%
+  group_by(name,sex) %>%
+  summarize(tot_n_bysex = sum(n))
+```
