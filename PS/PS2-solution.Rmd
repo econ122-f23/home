@@ -1,0 +1,131 @@
+---
+title: "Problem Set 2 - solution"
+author: "Solution" 
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE, fig.height = 4, fig.width = 6)
+```
+
+Push your knitted homework assignment (.Rmd, .md docs, and any other required files or folders) to GitHub by the given deadline. 
+
+### Problem 1: Spot the error
+Explain why the following command does not color the data points blue, then write down the command that will turn the points blue.
+```{r}
+library(ggplot2)
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, color = "blue"))
+```
+
+**Answer:** The `aes()` command is used to map data to different types of output. The command `color = "blue"` tells `aes` to color each x,y pair that belongs to the group "blue." In this case, there is only one group, and R chooses to use red to identify that group. The code below shows that by adding the color option outside the `aes()` command, we can set the line blue.
+
+```{r}
+library(ggplot2)
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy), color = "blue")
+```
+
+### Problem 2: Galton I
+Using the famous `Galton` data set from the `mosaicData package`:
+```{r}
+library(mosaicData)
+head(Galton)
+```
+
+1. Create a scatterpolot of each person's `height` against their father's height
+2. Separate your plot into facets by `sex`
+3. Add regression lines to all your facets
+
+*Note: Use father's height as the x-axis*
+
+```{r}
+library(mosaic)
+
+#Q1: scatterplot of height vs father's height
+ggplot(data=Galton) + 
+  geom_point(aes(y=height, x=father))
+
+#Q2: scatterplot of height vs father's height (by sex)
+ggplot(data=Galton) + 
+  geom_point(aes(y=height, x=father)) +
+  facet_wrap(~sex)
+
+
+#Q2: scatterplot of height vs father's height (by sex)
+ggplot(data=Galton) + 
+  geom_point(aes(y=height, x=father)) +
+  facet_wrap(~sex) +
+  geom_smooth(aes(y=height, x=father),method=lm)
+
+```
+
+
+### Problem 3: Galton II
+Revisit the previous problem. Instead of faceting by `sex`, use `sex` to color the points in your scatterplot and include regression lines. Use a color scheme for the points that is not the default coloring. 
+
+```{r}
+
+#Q1: scatterplot of height vs father's height
+ggplot(data=Galton, aes(y=height,x=father,color=sex)) +
+  geom_point() +
+  scale_color_brewer(palette="Dark2") +
+  geom_smooth(method="lm") 
+
+
+```
+
+
+### Problem 4: How many variables?
+Consider the data `MLB_teams` that is in the `mdsr` package (see exercise 3.5). (Install if needed, then load the package to get the data set.)
+
+
+1. Use this data to create a graph with at least 4 variables present. Describe the story the graph is trying to display. 
+
+```{r}
+library(mdsr)
+head(MLB_teams)
+
+ggplot(data=MLB_teams, aes(x=WPct,y=normAttend,color=payroll)) +
+  geom_point() + 
+  facet_wrap(~lgID) +
+  geom_smooth(method=lm, se=FALSE)
+
+```
+
+The figure above analyzes the relationship between winning percentage and attendance rates. It further facets the reltionaship by league and uses color to highlight differences in payroll. We see a strong relationship between winning percentage and attendance. This makes sense because people prefer to watch a game when the likelihood of winning is higher. The coloring shows taht teams with higher payroll tend to have both higher winning percentages and higher attendance. 
+
+
+### Problem 5: Storm paths by year
+Textbook exercises 3.10 [second edition 3.8]. The data for the problem is the data frame `storms` in the `nasaweather` package. 
+
+- Use `lat` (y-axis!) and `long` (x-axis!) to plot the path of the storms and add `coord_quickmap()` to get a decent aspect ratio between the two coordinates (so you can accurately judge distance traveled).
+
+- To use color to distinguish storms but not include the legend of storm names/colors you can add `scale_color_discrete(guide="none")`. 
+
+
+```{r}
+library(nasaweather)
+
+ggplot(data=storms, aes(x=long,y=lat,color=name)) + 
+  geom_path() +
+  facet_wrap(~year) +
+  scale_color_discrete(guide="none") +
+  coord_quickmap()
+```
+
+
+
+### Problem 6: Storm types by year
+Revist the `storms` data used in problem 5. Use `ggplot` to create a stacked bar graph that shows the proportion of storm `type` that occur each `year`. Use `scale_fill_brewer` or `scale_fill_manual` to change the default coloring of the bars.
+
+```{r}
+#library(nasaweather)
+head(storms)
+
+ggplot(data=storms, aes(x=year,fill=type)) + 
+  geom_bar(position="fill") +
+  scale_fill_manual(values=c("blue","green","yellow","red")) +
+  ylab("proportion")
+
+```
