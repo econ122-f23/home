@@ -1,0 +1,147 @@
+---
+title: "Data wrangling: multiple data table - Solution"
+author: "ECON 122"
+date: "Day 7"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL, fig.height = 4, fig.width = 8)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr","nycflights13")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+Package versions used:
+```{r}
+mypacks
+lapply(mypacks, packageVersion)
+```
+
+
+## `nycflights13` package
+The `nycflights13` package contains multiple data sets describing `flights` departing from NYC area in 2013, along with info on `airlines`, `airports`, `planes` and `weather` in 2013. 
+
+#### 1. Take a look at the `flights` `airlines` and `airports` data set help files.
+
+- What variable(s) are the keys that connect the `flights` and `airlines` data sets?
+
+*answers:* `flights` variable `carrier` matches with `airlines` variable `carrier`.
+
+- What variable(s) are the keys that connect the `flights` and `airports` data sets?
+
+*answers:* `flights` variables `origin` and `dest` both connect to `airports` variable `faa`
+
+
+#### 2. Use the `airports` data set to add the destination airport information to the `flights` data. 
+
+- How many unique flight destintations in `flights` are not given in the `airports` data?  (Hint: look at `anti_join` or `semi_join`) Why do you think they are missing?
+
+*answer:* `anti_join(x,y)` is a filtering join, it returns rows of `x` that are not matched in `y`. There are over 7,000 flights in the `anti_join` command, but that doesn't tell us how many unique destinations they have. After selecting the `dest` variable, the `distinct()` command tells us that there are just `r nrow(anti_join(flights, airports, by=c("dest"="faa")) %>% select(dest) %>% distinct())` destinations in `flights` that are not in `airports`. They seem to be airports in territories but not US states.
+```{r}
+anti_join(flights, airports, by=c("dest"="faa")) %>% select(dest) %>% distinct()
+```
+
+- How many airports given in `airports` are not destinations given in `flights`?  Why do you think they are missing? 
+
+*answer:* there are `r nrow(anti_join(airports, flights, by=c("faa"="dest")) )` airports in `airports` that are not destinations in `flights`. Since each row in `airports` is a distinct location (which you can verify with a `distinct` command), we don't actually need to check for unique locations like we did for the flights data. These look like smaller airports that don't have direct flights to NYC area airports.
+```{r}
+anti_join(airports, flights, by=c("faa"="dest")) 
+```
+
+- Use `left_join` to add `airports` info to the `flights` data. Why would we want to perform such a join? How many rows are there in this joined data? Then repeat using `inner_join` and `full_join`. Explain the differences in row counts for these three ways of joining.
+
+*answers:* Use a `left_join` to add destination names to the `flights` data gives `r nrow(flights)` rows. With `inner` we get `r nrow(inner_join(flights,airports, by=c("dest"="faa")) )` and with `full` we get `r nrow(full_join(flights,airports, by=c("dest"="faa")))`. 
+
+This join is helpful if we want additional information on airports. Currently only the airport code is provided in `flights`.
+
+The `left` join preserves the length of the `flights` data, and puts `NA`'s in for locations of the four destinations that are not in `airports`. The `inner` join only contains the `dest` that are in `airports`, so this is the smallest of the three joins. The `full` joins includes all possible `airports` and `dest` locations and fills in `NA`'s whenever a `dest` location is unknown, or a `airport` was not one of the flights destinations. 
+
+```{r}
+(flights_dest<- left_join(flights,airports, by=c("dest"="faa")) )  
+inner_join(flights,airports, by=c("dest"="faa")) 
+full_join(flights,airports, by=c("dest"="faa")) 
+nrow(flights)
+```
+
+- Calcuate the median `arr_delay`, average flight `distance`, and number of flights for each `destintations`. Plot mean distance vs mean arrival delay, using number of flights to determine point size. Describe the trend you see.
+  - *hint*: Use `geom_smooth` to help you see the trend
+  - *hint*: Use the `na.rm=TRUE` flag to remove `NA`s
+
+*answer:* Median arrival delay increases slightly until 1000 miles, then descreases. There are some outlier cases, but these look to be destinations with relatively few flights in a year. For example, the very low arrival delay (less than -20, meaning it arrived ahead of schedule) was one flight to `LEX`.  
+
+```{r}
+flights_dest %>% 
+  group_by(dest) %>% 
+  summarize(medianArrDelay = median(arr_delay, na.rm=TRUE),
+            distance = mean(distance, na.rm=TRUE), 
+            n=n()) %>%
+  ggplot(aes(x=distance, y=medianArrDelay)) + 
+    geom_point(aes(size=n)) + 
+    geom_smooth() 
+flights_dest %>% 
+  group_by(dest) %>% 
+  summarize(medianArrDelay = median(arr_delay, na.rm=TRUE),
+            distance = mean(distance, na.rm=TRUE), 
+            n=n()) %>% 
+  filter(medianArrDelay < -20)
+```
+
+**Counting Comment:** The `n()` command above will count rows (flights) to each `dest` (grouping) even if it is missing a distance or arrival delay measurement. If we only wanted to "count" valid rows will data for each, we should add a `filter(!is.na(arr_delay), !is.na(distance))` before summarizing the data. 
+
+- For fun: Use median arrival delay by destination to map mean delay by location on a map of the US. You can filter `lat` and `long` to restrict attention to the main 48 states. 
+
+*answer:* Take care with how layers are added. The polygon fill needs to happen before the points are laid on top. The `filter` command is used (in addition to the `scale` commands) to make sure that Alaska and Hawaii times aren't included in the color scaling of median arrival delay times. 
+
+```{r}
+states <- map_data("state")
+flights_dest %>% 
+  group_by(dest) %>%   
+  summarize(medianArrDelay = median(arr_delay, na.rm=TRUE), 
+            long=first(lon),
+            lat=first(lat)) %>%
+  filter(between(long, -125,-65), between(lat, 20,50)) %>%
+  ggplot(aes(x=long,y=lat)) + 
+    geom_polygon(data=states, aes(x=long, y=lat, group=group), fill="gray",color="black") + 
+    geom_point(aes(color=medianArrDelay)) +  
+    coord_map() + 
+    scale_x_continuous(limits = c(-125,-65)) + 
+    scale_y_continuous(limits = c(20,50)) + 
+    scale_color_gradient2(midpoint=0,low="blue",high="red",mid="black")
+```
+
+#### 3. Use the `weather` data set to add hourly weather information to the `flights` data. 
+
+- The `flights` data contains `hour` and `minute` variables. Do these record the departure, scheduled departure, arrival or schedule arrival time?
+
+*answers:* scheduled departure time, this is the time to use to join with weather data
+
+```{r}
+flights %>% select(hour,minute,sched_dep_time,dep_time)
+```
+- What variables are the keys to connect `flights` and `weather`?
+
+*answers:* The `month`,`day`, `hour` and `origin` variables. 
+
+#### 4. Use the `weather` data set to add the hourly weather information to the `flights` data. 
+
+- Plot the daily average departure delay vs. the daily average precip, using colors to represent origin. Describe the relationship you observe.
+
+*answers:* As expected, we observe a positive relationship between average precipitation and departure delay. 
+
+```{r}
+flights_weather<- left_join(flights,nycflights13::weather,by=c("month","day","hour","origin")) 
+flights_weather %>% select(month,day,hour,precip) 
+flights_weather %>% 
+  group_by(month,day,origin) %>% 
+  summarize(mean_precip=mean(precip,na.rm=TRUE), mean_delay=mean(dep_delay,na.rm=TRUE)) %>% 
+  ggplot(aes(x=mean_precip,y=mean_delay)) + 
+      geom_point(aes(color=origin)) 
+```
+
+
