@@ -28,7 +28,7 @@ lapply(mypacks, library, character.only=TRUE)  # load all packages
 
 - Many organizations store various types of data in different sources 
     + different "spreadsheets" or databases
-    + think about all the info CMC has about you!
+    + think about all the info the college has about you!
         + registrar (grades, courses); Dean of Student (personal info); Admissions (HS, application info)
 - We need a common **key** that can ID the same individual across multiple data tables/bases. 
     + name, ID number are common
@@ -99,7 +99,10 @@ left_join(class_grades,GPA,by = c("student_ID"="CMC_ID"))
 right_join(class_grades,GPA,by = c("student_ID"="CMC_ID")) 
 ```
 - All the students that I have GPA information for, even if they are not in my class
-
+- Note: `right_join` is just `left_join` but with the order switched
+- Don't *really* need it, but it can be useful if you don't want to switch order
+  
+  
 ## Example: class grades {.build}
 
 - What does `full_join` do?
