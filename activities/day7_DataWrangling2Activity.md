@@ -20,11 +20,11 @@ The `nycflights13` package contains multiple data sets describing
 
 #### 2. Merging `airports` and `flights` data.
 
-- How many *unique* flight `destintations` in `flights` are not given in
+- How many *unique* flight `destinations` in `flights` are not given in
   the `airports` data? (Hint: look at `anti_join` or `semi_join`) Why do
   you think they are missing?
   - Hint: You may need to use `distinct()`
-- How many airports given in `airports` are not `destintations` given in
+- How many airports given in `airports` are not `destinations` given in
   `flights`? Why do you think they are missing?
 - Use `left_join` to add `airports` info to the `flights` data. Why
   would we want to perform such a join? How many rows are there in this
