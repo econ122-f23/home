@@ -3468,9 +3468,9 @@ Levels: Sun &lt; Mon &lt; Tue &lt; Wed &lt; Thu &lt; Fri &lt; Sat
 </ul>
 
 <pre class = 'prettyprint lang-r'>&gt; today()
-[1] &quot;2023-09-26&quot;
+[1] &quot;2023-09-27&quot;
 &gt; now()
-[1] &quot;2023-09-26 17:54:47 PDT&quot;</pre>
+[1] &quot;2023-09-27 08:34:33 PDT&quot;</pre>
 
 </article></slide><slide class=""><hgroup><h2><code>lubridate</code>: measuring time</h2></hgroup><article  id="lubridate-measuring-time-1" class="build">
 
@@ -3479,7 +3479,7 @@ Levels: Sun &lt; Mon &lt; Tue &lt; Wed &lt; Thu &lt; Fri &lt; Sat
 </ul>
 
 <pre class = 'prettyprint lang-r'>&gt; interval(firstDay, today())  
-[1] 2023-08-28 UTC--2023-09-26 UTC</pre>
+[1] 2023-08-28 UTC--2023-09-27 UTC</pre>
 
 <ul class = 'build'>
 <li><code>duration</code> specifies a length of time (not tied to specific dates)</li>
@@ -3500,16 +3500,16 @@ Levels: Sun &lt; Mon &lt; Tue &lt; Wed &lt; Thu &lt; Fri &lt; Sat
 </ul>
 
 <pre class = 'prettyprint lang-r'>&gt; interval(firstDay, today()) / ddays(1) 
-[1] 29</pre>
+[1] 30</pre>
 
 <ul class = 'build'>
 <li>How many weeks? minutes?</li>
 </ul>
 
 <pre class = 'prettyprint lang-r'>&gt; interval(firstDay, today()) / dweeks(1)
-[1] 4.142857
+[1] 4.285714
 &gt; interval(firstDay, today()) / dminutes(1)
-[1] 41760</pre>
+[1] 43200</pre>
 
 </article></slide><slide class=""><hgroup><h2><code>lubridate</code>: measuring time</h2></hgroup><article  id="lubridate-measuring-time-3" class="build">
 
