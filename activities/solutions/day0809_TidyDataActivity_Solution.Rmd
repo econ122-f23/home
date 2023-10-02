@@ -1,0 +1,320 @@
+---
+title: 'Tidy data: Carleton College Energy Activity - Solution'
+author: "ECON 122"
+date: "Day 8,9"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE, fig.height = 4, fig.width = 8)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr","readr","tidyr","lubridate")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+The data for this example is from Carleton College. The goal of this activity is to help you better understand what issues arrive from working with real world data.
+
+
+# Building Data
+The `AAbuildings` dataset gives the size and year built of buildings on campus that are considered academic or administrative buildings. 
+
+### Question 1
+**1.** Run the two read commands below (`read.csv` and `readr::read_csv`). How do they read in the data differently?
+
+**2.** How many buildings on campus are classified as academic or administrative?
+
+```{r}
+AAbuildings <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/AcadAdminBuildings.csv",stringsAsFactors=TRUE)
+glimpse(AAbuildings)
+AAbuildings <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/AcadAdminBuildings.csv")
+glimpse(AAbuildings)
+```
+
+#### *Answer:*
+**1.** `read.csv` defaults to factor variables for anything with characters while `read_csv` defaults to character variables. 
+**2.** There are `r nrow(AAbuildings)` rows in the data set so that is the number of acad/admin buildings. 
+
+# Energy Use Data
+A second dataset gives energy use (kiloWatt hour) every 15 minutes for the 15-16 academic year for all buildings on campus that have an energy meter installed. 
+
+### Question 2
+**1.** How have the variable types changed when using `read_csv` instead of `read.csv`?
+    - e.g. look at Musser, Timestamp
+```{r}
+energy1 <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/EnergyData1516.csv")
+glimpse(energy1)
+local_edition(1)
+energy2 <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/EnergyData1516.csv")
+glimpse(energy2)
+```
+
+**2.** Use the `?read_csv` help file to determine why the `read_csv` command picks character or integer types for some variables. (Hint: look at the `guess_max` argument)
+
+**3.** The Musser Hall readings in `energy2` should not be logical types. Why do the results below suggest that this is an issue?  (You could also look at `problems(energy2)`).  
+```{r}
+summary(energy1$Musser_Hall)
+summary(energy2$Musser_Hall)
+```
+#### Answer:
+**1.** With `read_csv`, `Timestamp` is  a date variable type and `dayWeek` is a character while they were both factors with `read.csv`. There are other numeric variables that are logical valued with `read_csv` and double valued with `read.csv`.
+
+**2.**  `read_csv` guesses at column type by looking at the first 1000 rows (`guess_max` value). Musser Hall has no readings for the first 1000 rows so it incorrectly guesses character. 
+
+**3.** When a numeric was encountered in the Musser Hall data, it is converted to an `NA` value. The `summary` command on the `read_csv` version shows 35129 NA's while the `read.csv` (double) version shows only 22669 NA's. Therefore, `read.csv` correctly imports the column as `numeric` while `read_csv` incorrectly assumes it is logical from the fact that the first 1000 rows are `NA`. The R documentation shows that `logical` is the prefered data type when a column consists of all `NA`s.
+
+### Question 3
+Read the energy data in again using the `read_csv` command below that specifies column type for `Timestamp` and `dayWeek` and defaults to double types for all other. The order of the factor levels of `dayWeek` are also given so we get days ordered correctly in plots. Note that you will need to wrap a variable name in backticks if it starts with a non-letter character. 
+
+**1.** What are the dimensions of the energy data?
+
+**2.** What do the rows represent? columns represent? Is this "tidy" data (more narrow than wide)?
+
+**3.** How many buildings on campus are in the energy data?
+
+```{r}
+energy <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/EnergyData1516.csv", 
+                   col_type = cols(.default = col_double(), 
+                                   Timestamp = col_datetime(format = ""),
+                                   dayWeek = col_factor(levels=c("Mon","Tues","Wed","Thurs","Fri","Sat","Sun"))))
+glimpse(energy)
+summary(energy1$Musser_Hall)  # can check that summaries match
+summary(energy$Musser_Hall)
+summary(energy$`100_Nevada_Street`)  # use backticks with variable names that start with numbers
+```
+
+#### *Answer:*
+**1.** There are `r nrow(energy)` rows and `r ncol(energy)` columns in the data
+
+**2.** The rows are a unique date/hour/minute combination (minutes recorded every 15 minutes) for the 15-16 year. Columns are mainly composed of different academic building energy usage amounts, with some time and date variables. This is very wide data with most columns containing energy usage in different buildings. 
+
+**3.** The first 8 columns are time/date variables, so there are `r ncol(energy)-8` buildings.
+
+
+### Question 4
+**1.** For the `Center_for_Mathematics_&_Computing`: Use the energy data to plot the average hourly energy usage in Oct. What trend do you see?
+
+**2.** For the `Center_for_Mathematics_&_Computing`: Show how your plot for #1 above varies by day of the week (`dayWeek`). What trends do you see?
+
+#### *Answer:*
+**1.** The average hourly usage in Oct. will be the average of all hourly readings for all 31 days in Oct. For example, at noon we get 4 readings (15-min increments) so over the entire month the average noon usage is the average of `r 4*31` readings. We get this data by filtering Oct and grouping by hour, then averaging (computing `n()` just to make sure our grouping is correct). Then we can use a line plot to view average usage over the day. In the CMC, we see a peak in usage during classes, then a slight drop at dinner time (~6pm) and another smaller peak around 8pm.
+```{r Q4a}
+energy_time <- energy %>% 
+  filter(month==10) %>% 
+  group_by(timeHour) %>% 
+  summarize(N=n(),mean_energy=mean(`Center_for_Mathematics_&_Computing`,na.rm=TRUE)) %>%
+  print(n=5)
+energy_time %>%  ggplot(aes(x=timeHour,y=mean_energy)) + 
+  geom_line() + 
+  labs(title="Q4 first plot",x="hour of the day",y="average hourly KWH in October")
+```
+
+**2.** Same idea as above, but now we need to also group by day of the week. So we are averaging the 4 hourly usage amounts over the 4-5 times a each day of the week occurs in a month. We can see a distinct difference in hourly usage on weekdays vs. weekends. On weekends there is only a small bump in usage during the afternoon and Sunday evening.
+```{r Q4b}
+energy_daytime <- energy %>% 
+  filter(month==10) %>% 
+  group_by(dayWeek,timeHour) %>% 
+  summarize(N=n(),mean_energy=mean(`Center_for_Mathematics_&_Computing`,na.rm=TRUE)) %>%
+  print(n=5)
+energy_daytime %>%  ggplot(aes(x=timeHour,y=mean_energy,color=dayWeek)) +
+  geom_line() + 
+  labs(title="Q4 second plot",x="hour of the day",y="average hourly KWH in October")
+```
+
+### Question 5
+**1.** For the `Center_for_Mathematics_&_Computing`: Use the energy data to plot the average energy usage in Oct. of 2015 by day of the week (`dayWeek`). 
+
+  - note: if you use `geom_line` you will need to add `group=1` to your `aes` to get a line graph when plotting against the categorical variable `dayWeek`. This is because when we use a `factor` variable `aes` will set the group to each factor. `geom_line` will then try to connect the dots **WITHIN** each group which is just connecting to itself. To fix this, we set `group=1` to tell `ggplot` that all the observations are part of the same `group` and so to connect the line across days of the week. We could also use `group=99`, the main idea is that we set all the observations to the **SAME** group.
+
+**2.** How could you add more buildings to your plot? How easy or hard would this be with the data in the current (wide) format?
+
+#### *Answer:*
+**1.** Now our analysis unit is day of the week (instead of hour). There are 96 readings per day and there will be 4 to 5 days of the week in a month, so we should see either `r 4*96` or `r 5*96` readings averaged to get our mean usage by day of the week in Oct.  We see that usage peaks mid-week and falls during the weekend.
+
+```{r Q5a}
+energy_dayWeek <- energy %>% 
+  filter(month==10) %>% 
+  group_by(dayWeek) %>% 
+  summarize(N=n(),mean_energy=mean(`Center_for_Mathematics_&_Computing`,na.rm=TRUE)) %>%
+  print(n=5)  
+energy_dayWeek %>%  ggplot(aes(x=dayWeek,y=mean_energy,group=1)) + 
+  geom_line() + 
+  labs(title="Q5 plot",x="day of the week",y="average daily KWH in October")
+```
+
+**2.** In wide form, adding another building is challenging. You could add a couple additional buildings by creating more building specific means during the `summarize` command. You then add these lines to the existing plot by adding more `geom` commands. But to do this for many buildings would require a lot of code, a `for` loop or use of an `apply` command (which we haven't learned yet). The easier way to do this would be to restructure the data.
+
+```{r Q5b}
+energy_dayWeek2 <- energy %>% 
+  filter(month==10) %>% 
+  group_by(dayWeek) %>% 
+  summarize(N=n(),mean_energyCMC=mean(`Center_for_Mathematics_&_Computing`,na.rm=TRUE),mean_energyLaird=mean(Laird_Hall,na.rm=TRUE)) %>%
+  print(n=5)  
+energy_dayWeek2 %>%  ggplot(aes(x=dayWeek,group=1)) + 
+  geom_line(aes(y=mean_energyCMC)) + 
+    geom_line(aes(y=mean_energyLaird), color="red") +
+  labs(title="Q5 plot",x="day of the week",y="average daily KWH in October")
+```
+
+# Reshape `energy` data
+Create a narrow version of the `energy` data to allow you to *filter* to select one, or more, buildings to plot and analyze. 
+
+```{r reshape}
+energy_narrow <- energy %>% 
+  gather(key=building, value= energyKWH, `100_Nevada_Street`:Wilson_House)
+energy_narrow
+```
+
+### Question 6: 
+**1.** What are the dimensions of the narrow version of this data?
+
+#### *Answer:*
+**1.** There are `r nrow(energy_narrow)` rows and `r ncol(energy_narrow)` columns.
+
+### Question 7
+**1.** Recreate your graph from Question 5 using the narrow version of this data. What parts of your data wrangling or plot commands do you need to change? 
+
+#### *Answer:*
+**1.** To do this you just need to filter to get the `Center for Mathematics & Computing` rows and use the `energyKWH` variable for the response.
+```{r Q7}
+energy_narrow_dayWeek <- energy_narrow %>% 
+  filter(month==10, building== "Center_for_Mathematics_&_Computing") %>% 
+  group_by(dayWeek) %>% 
+  summarize(N=n(),mean_energy=mean(energyKWH,na.rm=TRUE)) %>%
+  print(n=5)  
+energy_dayWeek %>%  ggplot(aes(x=dayWeek,y=mean_energy,group=1)) + 
+  geom_line() + 
+  labs(title="Q7 plot",x="day of the week",y="average daily KWH in October")
+```
+
+### Question 8
+**1.** Plot a line graph of the average energy usage in Oct. by day of the week (`dayWeek`) for each `building`. What trends do you see? (can you see any?)
+    + note: for `geom_line` you will need to add `group=building` to your `aes` to get a line graph for each building when plotting against the categorical variable `dayWeek`
+
+#### *Answer:*
+**1.** Now we need to remove the CMC filter and *add* `building` to the grouping variable list (otherwise we will get average daily usage across all buildings on campus). It is hard to see any trends at all in this graph because of the large gap between the highest line (likely the "main campus" energy meter). Even without this meter's readings, we can't easily distinguish between buildings.   
+
+```{r Q8, fig.height=9}
+energy_narrow_dayWeekAll <- energy_narrow %>% 
+  filter(month==10) %>% 
+  group_by(dayWeek,building) %>% 
+  summarize(N=n(),mean_energy=mean(energyKWH,na.rm=TRUE)) %>%
+  print(n=5)  
+energy_narrow_dayWeekAll %>% 
+  ggplot(aes(x=dayWeek,y=mean_energy,group=building,color=building)) + 
+  geom_line() + 
+  labs(title="Q8 plot",x="day of the week",y="average daily KWH in October") + 
+  theme(legend.position = "bottom") + 
+  scale_color_discrete(guide="none")
+energy_narrow_dayWeekAll %>% filter(building != "Main_Campus") %>%
+  ggplot(aes(x=dayWeek,y=mean_energy,group=building,color=building)) + 
+  geom_line() + 
+  labs(title="Q8 plot without Main Campus",x="day of the week",y="average daily KWH in October") + 
+  theme(legend.position = "bottom") + 
+  scale_color_discrete(guide="none")
+```
+
+# Joining data
+Since we have so many buildings, perhaps limiting our results to academic/admin buildings will help to clear some of the clutter
+
+### Question 9
+**1.** How many buildings are in the energy data? 
+
+**2.** How many of the buildings in the energy data are academic/admin buildings?
+
+**3.** How many academic/admin buildings in the building data are not included in the energy data?
+
+#### *Answer:*
+```{r Q9}
+nrow(AAbuildings)
+EnergyBuildings <- energy_narrow %>% select(building) %>% distinct() 
+EnergyBuildings %>% semi_join(AAbuildings, by=c("building"))
+anti_join(AAbuildings,energy_narrow,by=c("building"))
+```
+
+**1.** There are `r nrow(EnergyBuildings)` buildings in the energy data
+
+**2.** `r nrow(semi_join(EnergyBuildings,AAbuildings, by=c("building")))` of these were identified as acad/admin buildings via a join with the `AAbuildings` data. 
+
+**3.** There are `r nrow(anti_join(AAbuildings,energy_narrow,by=c("building")))` buildings in the `AAbuildings` dataset that are not in the energy data. 
+
+
+### Question 10
+Create a dataset by joining the energy and acad/admin building datasets so that you only have acad/admin buildings and full info for both energy and size/year built. 
+
+```{r join}
+energyJoin <- inner_join(AAbuildings,energy_narrow,by=c("building")) 
+```
+
+**1.** Repeat question 8, but this time just for acad/admin buildings. Are any trends or differences in buildings clearer?
+
+#### *Answer:*
+**1.** 
+
+```{r Q10, fig.height=7}
+energyJoin_dayWeekAll <- energyJoin %>% 
+  filter(month==10) %>% 
+  group_by(dayWeek,building) %>% 
+  summarize(N=n(),mean_energy=mean(energyKWH,na.rm=TRUE)) %>%
+  print(n=5)  
+energyJoin_dayWeekAll %>% 
+  ggplot(aes(x=dayWeek,y=mean_energy,group=building,color=building)) + 
+  geom_line() + 
+  labs(title="Q7B plot",x="day of the week",y="average daily KWH in October") 
+```
+
+With fewer buldings, the trends or differences are slightly clearer. 
+
+
+### Question 11: use joined data
+**1.** Compute the mean energy use by building for Oct. What buildings are the top 5 energy users?
+
+**2.** Repeat the question, but this time compute mean energy use per square foot. Any changes in the top 5?
+
+**3.** Plot the mean energy use per square foot by day of the week for the top 5 buildings found the the previous question and include info about their year built. Compare the daily trends in these buildings. 
+
+#### *Answer:* 
+**1.** With no missing data, there should be `r 4*24*31` readings in a month for each building. We are averaging these to get our top energy users in Oct. (average is better than sum since some buildings may have energy meters that were offline for some reason, creating the possibility of missing data.) The top 5 energy users were Weitz, Laird, AGH/Johnson, Gould, Sayles-Hill. 
+```{r Q11a}
+energyJoin %>% 
+  filter(month==10) %>% 
+  group_by(building) %>% 
+  summarize(N=n(),mean_energy=mean(energyKWH,na.rm=TRUE)) %>% 
+  arrange(desc(mean_energy)) %>% 
+  print(n=5)
+```
+
+**2.** We just need to divide by `sqFt` to get the usage reading adjusted for the size of a building (KWH/sqft). The top 5 users by square footage are Laird , AGH/Johnson, Hoppin House, Strong House and Sayles-Hill.
+```{r Q11b}
+top5 <- energyJoin %>% 
+  filter(month==10) %>% 
+  group_by(building) %>%
+  summarize(N=n(),mean_energyPerSqFt=mean(energyKWH/sqFt,na.rm=TRUE)) %>% 
+  arrange(desc(mean_energyPerSqFt)) %>% 
+  slice(1:5)
+top5
+```
+
+**3.** The `top5` dataset created for part b gives us the names we want to pull from the joined data `energyJoin`. We use `inner_join` to do a filtering join. After the join, we then need to filter to get October (we need to do this again, `top5` only gives building names, we still need to filter the joined energy data again), then group by building *and* day of the week and compute average usage per square foot. We see relatively flat trends for most buildings while Laird drops on the weekend. 
+
+This makes sense if Laird Hall is an academic building while the others are residential. 
+
+```{r Q11c}
+top5byDay <- energyJoin %>% 
+  inner_join(top5,by="building") %>% 
+  filter(month==10) %>% 
+  group_by(building,dayWeek) %>% 
+  summarize(mean_energyPerSqFt = mean(energyKWH/sqFt,na.rm=TRUE), yearBuilt = first(year.x)) %>% 
+  print(n=5)
+top5byDay %>%  
+  ggplot(aes(x=dayWeek, y=mean_energyPerSqFt, group=building,color=yearBuilt)) +
+  geom_line() + 
+  geom_point(aes(shape=building),size=3.5) + 
+  labs(title="Q11c plot",x="day of the week",y="average daily KWH in October") 
+```
+
+
