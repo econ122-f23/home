@@ -150,6 +150,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
 -   before class:
     -   read MDSR sections 5.1-5.3
 -   in class:
+    -   [exam explanation](exam1.md)
     -   day 9 slides: [.Rmd](docs/day9_TidyDataSlides.Rmd) [.html](https://econ122-f23.github.io/home/day9_TidyDataSlides.html)
     -   continue day 8/9 activity
           - solutions: [.Rmd](activities/solutions/day0809_TidyDataActivity_Solution.Rmd) [.md](activities/solutions/day0809_TidyDataActivity_Solution.md)
@@ -161,7 +162,6 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
     -   finish up homework 4 - due Monday
         -   to tackle problem 4 Q2, make sure to review the `lubridate` examples in the day 8 slides and [WG section 16.2.2](http://r4ds.had.co.nz/dates-and-times.html#from-individual-components).
 -   in class: 
-    -   [exam explanation](exam1.md)
     -   day 10 slides: [.Rmd](docs/day10_StringsSlides.Rmd) [.html](https://econ122-f23.github.io/home/day10_StringsSlides.html)
     -   day 10 activity: [.Rmd](activities/day10_stringsActivity.Rmd) [.md](activities/day10_stringsActivity.md)
         - solutions: [.Rmd](activities/solutions/day10_stringsActivity_Solution.Rmd) [.html](https://econ122-f22.github.io/home/day10_stringsActivity_Solution.html)
