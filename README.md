@@ -173,7 +173,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
 -   before class:
     -   read MDSR section 5.4
 -   in class:
-    -   day 11 slides: [.Rmd](docs/day11_IterationsSlides.Rmd)  [.html](https://econ122-f22.github.io/home/day11_IterationsSlides.html)
+    -   day 11 slides: [.Rmd](docs/day11_IterationsSlides.Rmd)  [.html](https://econ122-f23.github.io/home/day11_IterationsSlides.html)
     -   day 11 activity: [.Rmd](activities/day11_IterationActivity.Rmd) [.md](activities/day11_IterationActivity.md)
         - solutions: [.Rmd](activities/solutions/day11_IterationActivity_Solution.Rmd) [.md](activities/solutions/day11_IterationActivity_Solution.md)
 
