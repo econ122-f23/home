@@ -1,0 +1,184 @@
+---
+title: "Strings and Regular Expressions - Solution"
+author: "ECON 122"
+date: "Day 10"
+output: 
+  html_document:
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE, fig.height = 4, fig.width = 8)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr","readr","stringr")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+
+## Regular Expression Examples
+
+#### Question 1
+A Social Security number is an identifier that consists of 9 numbers. In the vector `out` below, replace all SSNs with an `XXX-XX-XXXX` string to annonymize *only* SSN data. Your algorithm should be general enough to handle non-conventional formatting of SSNs.
+```{r}
+x <- "my SSN is 953-29-9402 and my age is 65"
+y <- "My phone number is 612-943-0539"
+z <- "my ssn number is 39502 9485."
+out <- c(x,y,z)
+out
+```
+
+
+#### *Answer:*
+Here is one way to do this. Obviously just searching for digits won't work because there is an age and phone number:
+```{r Q1answer1}
+str_view_all(out,"\\d+")
+```
+We can get the SSN with the usual format (###-##-####) with a regex that has 3, 2, and 4 digits separated by a dash. 
+```{r Q1answer2}
+str_view_all(out,"(\\d){3}-(\\d){2}-(\\d){4}")
+```
+This missings the oddly formatted SSN in the third entry. Rather than use a dash, we can specify the divider as `[-\\.\\s]?` which allows either 0 or 1 occurences of a dash, period or space divider:
+```{r Q1answer3}
+str_view_all(out,"(\\d){3}[-\\.\\s]?(\\d){2}[-\\.\\s]?(\\d){4}")
+```
+Then we do a string replace with the annonymous string:
+```{r Q1answer4}
+ssn <- "(\\d){3}[-\\.\\s]?(\\d){2}[-\\.\\s]?(\\d){4}"
+str_replace_all(out, ssn, "XXX-XX-XXXX")
+```
+
+### Question 2
+The regular expression `"^[Ss](.*)(t+)(.+)(t+)"` detects "scuttlebutt", "Stetson", and "Scattter", but not "Scatter." Why?
+
+#### *Answer:*
+We can verify the claim:
+```{r Q2answer1}
+x <- c("scuttlebutt", "Stetson", "Scattter", "Scatter")
+str_detect(x, "^[Ss](.*)(t+)(.+)(t+)")
+```
+Break it the regex down into chunks (if you don't see the answer right away). First we get the leading s or S:
+```{r Q2answer2}
+str_view_all(x, "^[Ss]")
+```
+Then we get 0 or more values to follow:
+```{r Q2answer3}
+str_view_all(x, "^[Ss](.*)")
+```
+Now we get S/s through 1 or more t's in the string:
+```{r Q2answer4}
+str_view_all(x, "^[Ss](.*)(t+)")
+```
+Then we add 1 or more characters after the last t:
+```{r Q2answer5}
+str_view_all(x, "^[Ss](.*)(t+)(.+)")
+```
+But now we say that there must be 1 or more t's after the first "1 or more t, plus at least one other character" string. 
+```{r Q2answer6}
+str_view_all(x, "^[Ss](.*)(t+)(.+)(t+)")
+str_detect(x, "^[Ss](.*)(t+)(.+)(t+)")
+```
+This is what rules `scatter` out because it has two t's but there isn't an extra character between the two. Stetson only has two t's but there are characters between the two t occurences so it follows the rules. 
+
+Finally, to get the entire word we need to end the regex with `(.*)`:
+```{r Q2answer7}
+str_view_all(x, "^[Ss](.*)(t+)(.+)(t+)(.*)")
+```
+
+## Trump Tweets
+
+```{r TrumpTweets, warning=FALSE}
+tweets<- read_csv("https://raw.githubusercontent.com/mgelman/data/master/TrumpTweetData.csv")
+```
+
+### Question 3 
+a. What proportion of tweets (`text`) mention "Hillary" or "Clinton"?
+b. What proportion of these tweets include "crooked"?
+
+#### *Answer: *
+a.
+```{r}
+tw_prop <- tweets %>% 
+  select(text) %>% 
+  mutate(lower_text=str_to_lower(text),any_match=str_detect(lower_text,"hillary|clinton")) %>%
+  summarize(prop = mean(any_match)) 
+```
+About `r 100*round(tw_prop,3)`% of the tweets mention Hillary or Clinton.
+Here we can use `str_detect` which will return a 0 or 1 based on if the `RegExp` is detected. Once we have the vector of 0 and 1s we can take the mean.
+
+b.
+
+```{r}
+tw_prop_crooked <- tweets %>% 
+  select(text) %>% 
+  mutate(lower_text=str_to_lower(text),any_match=str_detect(lower_text,"hillary|clinton")) %>%
+  filter(any_match==1) %>%
+  mutate(any_match_crooked=str_detect(lower_text,"crooked")) %>%
+  summarize(prop = mean(any_match_crooked))
+```
+About `r 100*round(tw_prop_crooked,3)`% of the tweets mentioning Hillary or Clinton included "crooked." The methodology is similar but this time we filter on the `regex` expression rather than taking the mean of the binary variable. 
+
+
+### Question 4
+Compute the number of web links per tweet  and compare the count distributions by tweet source. Which source has the highest proportion of web links?
+
+
+#### *Answer:*
+We can use the Twitter link regex provided. Then use `str_count` to count the number of occurences of this regex in each tweet. Because there are relatively few links per tweet (4 or less), I'll use a stacked bar graph to look at the tweet count distribution for each source. We see that most of the Android tweets do not contain links (about 90%) while about 70% of the iPhone tweets contain at least one link.
+```{r Q4answer}
+link <- "https://t.co/[A-Za-z\\d]+"
+tweets %>%
+  mutate(ct = as.factor(str_count(text, link))) %>%
+  ggplot(aes(x=source,fill=ct)) + 
+  geom_bar(position="fill") + 
+  scale_fill_discrete("# links") + 
+  ggtitle("Number of web links per tweet by tweet source") +
+  ylab("Proportion")
+```
+
+### Question 5
+Extract all Twitter handles (starting with @)  from Trump tweets. Find and graph the distribution of the 10 most used handles.  
+
+#### *Answer:*
+We will use the regexp `@[^\\s]+` (@ followed by anything that is not a space) to find Twitter handles. Here is a check:
+```{r Q5answer1}
+tweets$text[50]
+str_view(tweets$text[50], "@[^\\s]+")
+```
+Now we extract these handles, and unlist them and make a (tbl) data frame from theis vector. Then we `group_by` the handle and count the number of occurences in the vector. Arranging and slicing off the top 10 gives us our "most popular" list which we then visualize with a simple bar graph. 
+```{r Q5answer2}
+ats <- unlist(str_extract_all(tweets$text, "@[^\\s]+"))
+length(ats)
+data_frame(ats=ats) %>%
+  group_by(ats) %>%
+  summarize(N=n()) %>%
+  arrange(desc(N)) %>%
+  slice(1:10) %>%
+  ggplot(aes(x=ats,y=N)) +
+  geom_bar(stat="identity") + 
+  labs(title="Top 10 Twitter handles references in Tweets", x="Twitter handle",y="count") +
+  theme(axis.text.x = element_text(angle=45,hjust=1))
+```
+
+### Question 6
+Repeat question 3 but look for times rather than web links. (Times are likely given when announcing an upcoming event on Twitter.)
+
+#### *Answer:*
+We can find a time with a string like `##:##`, `#:##` or any tweet with an a.m. or p.m. reference. Looks like about 40% of tweets from the Andriod or iPhone have at least one time reference while about 25% of tweets from the web client do. 
+
+```{r Q6answer}
+times <- "[\\d]{1,2}:[\\d]{2}|(am|pm|PM|AM|p.m|a.m|P.M|A.M)"
+tweets %>%
+  filter(str_detect(text, times)) %>%
+  select(text) %>%
+  print(width=Inf)
+tweets %>%
+    mutate(ct = as.factor(str_count(text, times))) %>%
+  ggplot(aes(x=source,fill=ct)) + 
+  geom_bar(position="fill") + 
+  ylab("Proportion")
+```
