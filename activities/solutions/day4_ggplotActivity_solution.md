@@ -44,6 +44,7 @@ The distribution of character count is
 
 ``` r
 > library(ggplot2)
+Warning: package 'ggplot2' was built under R version 4.2.3
 > w <- ggplot(data=tweets, aes(x=charCount))
 > w + geom_histogram() + ggtitle("Character Count Distribution") + xlab("Number of characters per tweet")
 ```
@@ -271,8 +272,9 @@ parametric, : zero-width neighborhood. make span bigger
 
 Warning in simpleLoess(y, x, w, span, degree = degree, parametric =
 parametric, : zero-width neighborhood. make span bigger
-Warning: Computation failed in `stat_smooth()`:
-NA/NaN/Inf in foreign function call (arg 5)
+Warning: Computation failed in `stat_smooth()`
+Caused by error in `predLoess()`:
+! NA/NaN/Inf in foreign function call (arg 5)
 ```
 
 ![](day4_ggplotActivity_solution_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
