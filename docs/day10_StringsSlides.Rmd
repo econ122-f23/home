@@ -269,7 +269,7 @@ str_view_all(c("color","colour","collar"), "colou?r")
 
 - Find all the numbers in a sentence
 ```{r}
-str_view_all("I love ECON122, I'm sad there are only 15 classes left.","[\\d]+")
+str_view_all("I love ECON122, I'm sad there are only 15 classes left.","\\d+")
 ```
 
 
@@ -346,7 +346,7 @@ str_length(mywords2)
 - extract all numbers
 ```{r}
 x
-str_extract(x, "[\\d]" )
+str_extract(x, "\\d" )
 ```
 
 ## Extracting {.build}
@@ -354,9 +354,9 @@ str_extract(x, "[\\d]" )
 - all numbers  in a string:
 ```{r}
 x
-str_extract_all(x, "[\\d]" ) # digits 
-str_extract_all(x, "[\\d]+" )  # numbers
+str_extract_all(x, "\\d" ) # digits 
+str_extract_all(x, "\\d+" )  # numbers
 ```
 
-- what will `"[\\d]{1,2}:[\\d]{2}"` extract?
+- what will `"\\d{1,2}:\\d{2}"` extract?
 
