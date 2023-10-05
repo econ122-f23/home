@@ -65,34 +65,11 @@ library(mypacks)  # this command fails
 
 ## `apply` family of commands
 
-- R has a family of commands that apply a function to different parts of a vector, matrix or data frame.
-    + `apply(matrix, MARGIN, FUN)`: applies the function `FUN` to the matrix `MARGIN` given (1=row, 2=column). Returns an atomic **vector** or **matrix**
-        - Ex: Calcualting the mean of all columns (`MARGIN`=2)
     + `lapply(vector, FUN)`: applies the `FUN` to each element in the vector (or list). Returns a list with length equal to that of the vector
         - Ex: Returing a vector or list of values (10,...,90 %ile) 
     + `sapply`: works like `lapply` but returns a vector (so `FUN` can only return one value)
         - Ex: Taking the mean of each group
 
-## `apply`: stats for a data frame {.build .smaller}
--  Read in `EnergyData1516.csv`: Remember columns are buildings
-```{r, echo=TRUE}
-energy <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/EnergyData1516.csv", 
-                   col_types = cols(Timestamp = col_datetime(), 
-                                    dayWeek = col_factor(levels=c("Mon","Tues","Wed","Thurs","Fri","Sat","Sun")) , 
-                                    .default = col_double()))
-glimpse(energy)
-```
-
-## `apply`: stats for a data frame {.build}
-
-- What if we want median energy usage for all buildings (**columns**) in `EnergyData1516`?
-    - KWH values in columns 9:90
-    - all columns have the same data type, R will coerce cols `9:90` into a matrix 
-    - use **margin 2** to apply the function (`median`) to the columns of the matrix
-```{r}
-medianKWH <- apply(energy%>%select(9:90), MARGIN=2, median, na.rm=TRUE) 
-medianKWH[1:6]
-```
 
 ## `lapply`: great command for avoiding `for` loops {.build}
 
