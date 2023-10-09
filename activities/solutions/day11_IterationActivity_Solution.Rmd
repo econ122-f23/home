@@ -1,0 +1,112 @@
+---
+title: "Iteration"
+author: "ECON 122"
+date: "Day 11"
+output: github_document
+--- 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE, fig.height = 4, fig.width = 8)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr","readr","stringr")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+
+## Using `sapply()` and `lapply()`
+
+
+#### Question 1
+You are considering moving to the following cities and want to gather information about them using the `MonthlyWeather` dataset you are familiar with.
+
+```{r}
+weather <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/MonthlyWeather.csv")
+cities <- c("Los Angeles","Atlanta","Dallas","Denver","Minneapolis","Pittsburgh")
+```
+
+Find the average monthly temperature (across all time periods available) for each city using `dplyr`.
+
+**ans:**
+
+```{r}
+weather %>% filter(city %in% cities) %>% group_by(city) %>% summarise(mean_tmp=mean(avgTmpF))
+```
+
+
+#### Question 2 
+
+Find the average monthly temperature (across all time periods available) for each city using `sapply`.
+
+1. You must first create a function that calculates the `mean` when given a `city` and a `dataset`. Create this function and test it out on one city.
+
+**ans:**
+
+```{r}
+meanfun <- function(cityarg,data) {
+  data %>% filter(city==cityarg) %>% 
+    summarise(mean_tmp=mean(avgTmpF))
+}
+```
+
+2. Use `sapply()` to apply your mean function to the vector of cities you are considering. Do you get the same answers as `dplyr'?
+
+**ans:**
+```{r}
+sapply(cities,meanfun,weather)
+```
+
+### Question 3
+While the mean is helpful, you would like to know what the extremes are. Instead of calculating the mean, you would like to create a table that displays the 3 coldest and hottest observations for each city.
+
+1. Can you perform this task using the simple `dplyr` commands? 
+
+**ans:** Yes, but it is likely going to look quite convoluted. (let me know if you come up with an elegant solution.)
+
+2. You first need to write a function that outputs a `dataframe` with the 3 coldest and hottest observations given a `city` and `dataset`. Create this function and test it out on one city.
+
+  - **Hint:** `bind_rows()` allows you to combine `dataframes`
+
+**ans:**
+
+```{r}
+extreme_temps <- function(cityarg,data) {
+  bot3 <- data %>% filter(city==cityarg) %>% select(city,avgTmpF) %>% arrange(avgTmpF) %>% head(3)
+  top3 <- data %>% filter(city==cityarg) %>% select(city,avgTmpF) %>% arrange(avgTmpF) %>% tail(3)
+  bind_rows(bot3,top3)
+}
+
+extreme_temps("Atlanta",weather)
+
+```
+
+3. Now use `sapply()` to apply your function to our selected cities. Is there an issue? 
+
+**ans:**
+```{r}
+str(sapply(cities,extreme_temps,weather))
+```
+`sapply()` returns a list of 12 but doesn't preserve the `dataframe` structure. We can still recover the data but it is slightly harder to work with
+
+4. What happens if you use `lapply()`? Can you transform your output to create 1 table that has a list of cities and their 3 hottest and coldest temperatures?
+
+```{r}
+tlist <- lapply(cities,extreme_temps,weather)
+ttable <- tlist %>% bind_rows() 
+```
+
+**ans:** The output from `lapply()` is slightly easier to work with because it preserves the dataframe structure. We can simply bind the list together (as seen in the class notes) in order to create one dataframe
+
+5. Visualize your results by plotting the 3 hottest and coldest monthly temperatures for each city. Which city do you prefer?
+
+```{r}
+ttable %>% 
+  ggplot(aes(x=city,y=avgTmpF)) + geom_point()
+```
+
+**ans:** Los Angeles looks very appealing if you ignore the one outlier month that is very hot. 
+
