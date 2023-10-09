@@ -55,7 +55,6 @@ library(mypacks)  # this command fails
 ```
 
 ## Why do we need iteration?
-
 - For the most part, `dplyr` commands `group_by` and `summarize` allow us to calculate various statistics we need
 - For more complicated procedures (coming up in second half) we might want to apply a more general `function`. 
     - Ex: Performing a non-standard operation (combining all strings in a group) 
@@ -64,17 +63,14 @@ library(mypacks)  # this command fails
 - Mostly setting us up for the second half of the course
 
 ## `apply` family of commands
-
-    + `lapply(vector, FUN)`: applies the `FUN` to each element in the vector (or list). Returns a list with length equal to that of the vector
-        - Ex: Returing a vector or list of values (10,...,90 %ile) 
-    + `sapply`: works like `lapply` but returns a vector (so `FUN` can only return one value)
+  - `lapply(vector, FUNCTION)`: applies `FUNCTION` to each element in the vector (or list). Returns a list with length equal to that of the vector
+      - Ex: Returing a vector or list of values (10,...,90 %ile) 
+  - `sapply`: works like `lapply` but returns a vector (so `FUNCTION` can only return one value)
         - Ex: Taking the mean of each group
-
 
 ## `lapply`: great command for avoiding `for` loops {.build}
 
 - `lapply` is very useful for vectorizing commands that aren't vectorized
-    - More general than `apply` because `apply` takes a `vector` or `matrix`
 - E.g. R chunk `packageCheck`: 
     + applying the function `library` to each entry in `mypacks`
 ```{r, eval=FALSE}
@@ -85,16 +81,27 @@ lapply(mypacks, library, character.only=TRUE)
 ```
 - `character.only=TRUE` is a `library` argument
 
+## `lapply`: stats for a data frame {.build .smaller}
+-  Read in `EnergyData1516.csv`: Remember columns are buildings
+```{r, echo=TRUE}
+energy <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/EnergyData1516.csv", 
+                   col_types = cols(Timestamp = col_datetime(), 
+                                    dayWeek = col_factor(levels=c("Mon","Tues","Wed","Thurs","Fri","Sat","Sun")) , 
+                                    .default = col_double()))
+glimpse(energy)
+```
+
 ## `lapply`: getting quantiles {.build}
 
+- Goal: What if we want percentiles 10-90 of energy usage for each building?
+    - With wide dataset this will create way too many columns (9 new columns per ~80 buildings)
 - Let's go to the narrow version of energy
-
 ```{r}
 energy_narrow <- energy %>% mutate(month = month(month, label=TRUE)) %>%
   gather(key=building, value= energyKWH, 9:90) 
 energy_narrow %>% select(building, energyKWH, dayWeek, month) %>% glimpse
 ```
-- Goal: for some grouping of the data, get percentiles 10-90 for each group
+
 ```{r, eval=FALSE}
 lapply(group_name, myfunction) 
 # returns 9 percentiles for each group
@@ -191,7 +198,7 @@ qdf %>% filter(building %in% c("Sayles-Hill" ,"Language_&_Dining_Center", "Olin_
 ## `do` in `dplyr`{.build}
 
 - the previous `lapply` can't quickly be generalized to other groupings
-    - e.g. get quantiles by month? or day of the week?
+    - e.g. get quantiles by month? or day of the week? (instead of building)
     - `qfun` needed to `filter` by `building`
 - the `do` command in `dplyr` lets you apply a function to the groups of a data frame:
 - Idea:
@@ -245,6 +252,5 @@ qdf3 %>% filter(building %in% c("Sayles-Hill" ,"Language_&_Dining_Center", "Olin
 
 ## Summary
 
-- `apply()` - use if you have a matrix
-- `lapply()` - much more general application (ie, can use for `library()`)
+- `lapply()` - general way to apply a function to elements of an array 
 - `dplyr::do()` - applying custom functions to the framework of `dplyr` `group_by`
