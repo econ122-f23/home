@@ -1,0 +1,318 @@
+---
+title: "PS4 - solution"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE, fig.height = 4, fig.width = 7)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr","nycflights13","readr","tidyr","lubridate","Lahman","scales")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+Package versions
+```{r}
+mypacks
+lapply(mypacks, packageVersion)
+```
+
+### Problem 1: joins
+The data set below called `Students` contains information on five students with their ID number, first name and computer preference.
+
+Id | Name | Computer
+-- | ---- | -----
+1 | Arya | m
+2 | Gregor | m
+3 | Cersei | w
+4 | Jon | m
+5 | Jon | w
+
+The data set below called `Classes` contains roster information (student first name and ID).
+
+Class | Student | Stud_Id
+------ | -- | --
+Econ | Jon | 4
+Econ | Arya | 1
+Econ | Cersei | 3
+Stats | Gregor | 2
+Stats | Jon | 4
+Stats | Jon | 5
+Stats | Arya | 1
+CS | Tyrion | 6
+
+What data set will be produced by the following commands? `Describe` the data set in words and `show` what it looks like using an R Markdown table to display the new data set. 
+
+**1.**
+```{r, eval=FALSE}
+left_join(Classes, Students, by=c("Stud_Id"="Id"))
+```
+
+#### *answer 1:*
+The student IDs are perfect keys so for each `Stud_Id` there is only one `Id` in the `Students` dataset. The data set produced has the same number of rows as `Classes` with the extra columns giving computer info (and the name from `Students`). Since Typrion is not in the `Students` dataset, there will be NAs for his `Name` and `Computer`.
+
+Class | Student | Stud_Id | Name | Computer
+------ | -- | --- | --- | ---
+Econ | Jon | 4 | Jon | m
+Econ | Arya | 1 | Arya | m
+Econ | Cersei | 3 | Cersei | w
+Stats | Gregor | 2 | Gregor | m
+Stats | Jon | 4 | Jon | m
+Stats | Jon | 5 | Jon | w
+Stats | Arya | 1 | Arya | m
+CS | Tyrion | 6 | NA | NA
+
+**2.** 
+```{r, eval=FALSE}
+Econ <- Classes %>% filter(Class == "Econ")
+Stats <- Classes %>% filter(Class == "Stats")
+inner_join(Stats, Econ, by="Stud_Id")
+```
+
+#### *answer 2:*
+A, `inner_join` of the `Stats` class roster with `Econ` will show `Stats` students who are also taking `Econ`.
+
+Class.x | Student.x | Stud_Id | Class.y | Student.y
+------ | -- | -- | -- | --
+Stats | Jon | 4 | Econ | Jon
+Stats | Arya | 1 | Econ | Arya
+
+**3.**
+```{r, eval=FALSE}
+anti_join(Stats, Econ, by="Stud_Id")
+```
+
+#### *answer 3:*
+An `anti_join` of the `Stats` class roster with `Econ` will show `Stats` students who are not also taking `Econ`.
+
+Class | Student | Stud_Id
+------ | -- | --
+Stats | Gregor | 2
+Stats | Jon | 5
+
+
+### Problem 2: restructure
+Consider the `Lakes_wide` data set below that records lake clarity (in meters) for 2012 through 2014.
+
+LakeId | 2012 | 2013 | 2014 
+---- | ---- | ---- | ----
+1 | 6.5 | 5.8 | 5.8 
+2 | 2.1 | 3.4 | 2.8
+
+What data set will be produced by the following commands? `Describe` the data set in words and `show` what it looks like using an R Markdown table to display the new data set. 
+
+**1.** 
+```{r, eval=FALSE}
+gather(Lakes_wide, key = Year, value = Clarity, 2:4)
+```
+
+####  *answer 1:*
+This command gathers columns 2-4 (clarity measurements) and places the `values` in a variable called `Clarity` and creates a new `key` variable called `Year` that identifies the year of each value. The `LakeId` identifies which lake each measurement was taken from. 
+
+LakeId | Year | Clarity
+-- | ---- | -----
+1 | 2012 | 6.5
+2 | 2012 | 2.1
+1 | 2013 | 5.8
+2 | 2013 | 3.4
+1 | 2014 | 5.8
+2 | 2014 | 2.8
+
+**2.**
+```{r, eval=FALSE}
+gather(Lakes_wide, key = Year, value = Clarity, 2:4) %>%
+  group_by(LakeId) %>%
+  arrange(Year) %>%
+  mutate(Change_in_Clarity = Clarity - lag(Clarity))
+```
+
+#### *answer 2:* 
+This takes the long data set from **1.**, arranges Clarity measures by year (first to last year), then for each lake it computes the difference between yearly measurements (current year minus previous year) using the `lag` function. Note that the 2012 change measurements are missing (`NA`) because we do not know the 2011 measurements. 
+
+LakeId | Year | Clarity | Change_in_Clarity
+-- | ---- | ----- | -----
+1 | 2012 | 6.5 | NA
+2 | 2012 | 2.1 | NA
+1 | 2013 | 5.8 | -0.7 
+2 | 2013 | 3.4 | 1.3 
+1 | 2014 | 5.8 | 0.0
+2 | 2014 | 2.8 | -0.6
+
+
+### Problem 3: planes
+Use the `nycflights13` package and the `flights` and `planes` data frames to answer the questions below. Use the `dplyr` package to answer the questions below. (See `nycflights13` help files for more data set details)
+
+**1.** What variable is the key that connects these two data sets?
+
+#### *Answer 1:*
+```{r}
+glimpse(flights)
+glimpse(planes)
+
+dim(unique(planes %>% select(tailnum)))-dim(planes %>% select(tailnum))
+```
+The `tailnum` variable gives the unique tail number identifying different planes. This variable, which is in both data sets, is the key that connects outgoing flights to the plane flying the route. 
+
+We can check to make sure `tailnum` really is a unique identifier here
+
+**2.** How many planes that flew out of NYC airports in 2013 are in the `planes` data set? How many are **not** in this data set?
+
+#### *Answer 2:*
+```{r}
+unique_planes <- unique(flights %>% select(tailnum)) #select all the unique tail numbers in flights
+matches <- semi_join(unique_planes,planes) # number of matches
+non_matches <- anti_join(unique_planes,planes) # number of non-matches
+```
+
+There are `r nrow(matches)` planes that flew out of NYC in 2013 that are in the `planes` data set. There are `r nrow(non_matches)` planes that flew out of NYC that are not in the `planes` data set. 
+
+
+**3.** What is the oldest plane (or planes) that flew out of NYC in 2013? Give the tail number(s), the year it was manufactured, and its number of flights from NYC in 2013.
+
+#### *Answer 3:*
+The variable `year.y` in the joined data set gives the year (of manufacture) from the `planes` data. Note that you could also use a `semi_join` of `planes` using `flights` to answer this question that is only about manufactured year. 
+
+Here we get the first entry of manufactured year for each `tailnum` and count the number of flights:
+```{r}
+oldest_plane <- inner_join(flights,planes,by="tailnum") %>% 
+  mutate(min_year=min(year.y,na.rm=TRUE)) %>% #create the minimum year
+  filter(year.y==min_year) %>% #filter on minimum year
+  group_by(tailnum,year.y) %>%
+  summarize(n_flight=n())
+```
+The oldest plane is tail number `r oldest_plane$tailnum` which had `r oldest_plane$n_flight` flights out of NYC in 2013.
+
+
+**4.** For the planes flying out of NYC airports in 2013, create a graph that shows the distribution of manufactured year. Describe the distribution. 
+
+#### *Answer 4:*
+A density, histogram or bar graph of manufacture years shows that most planes were made after 1980, with many planes made around 2000 and a smaller mode around 1990.
+```{r}
+inner_join(unique_planes,planes,by="tailnum") %>%
+   ggplot(aes(x=year)) + 
+     geom_bar()
+```
+
+**Note:** you need to only look at distinct `tailnum` to get the distribution of manufactured year. If you look at all flights, then you are creating a distribution for the number, or frequency, of flights out of NYC by manfactured year. 
+
+### Problem 4
+More with the `nycflights13` data. Consider `top_dest`, the top 10 destinations out of NYC area in 2013:
+```{r}
+top_dest <- flights %>% 
+  group_by(dest) %>% 
+  summarize(N=n()) %>% 
+  arrange(desc(N)) %>% 
+  slice(1:10)
+```
+
+
+**1.** 
+Use a `filtering join` command to create a `flights` data subset that only contains destinations in the `top_dest` top 10 destinations. What is the dimension of this data set? Why does it make sense to use a filtering join here? 
+
+#### *Answer 1:* 
+```{r}
+flights10 <- semi_join(flights, top_dest)
+flights10
+```
+
+The number of rows is `r nrow(flights10)` and columns is `r ncol(flights10)`. Because we are using `top_dest` to filter the data, using `semi_join` is slightly more efficient because it won't include uncessary columns from `top_dest`. In this case there is only 1 extra variable so it doesn't matter too much but there can be cases where there are many uncessary variables that get included when we use `inner_join`.
+
+**2.** 
+Use your joined data from part `1` to compute the median number of minutes **between flights** (not actual flight duration) to each destination. Which destination(s) has the shortest median time between flights? 
+
+  - **Note:** While the variable `time_hour` records departure time, it is too coarse (rounded to the nearest hour) for our purposes. Use the `make_datetime` function to convert the scheduled departure date/time (year,month,day,hour,minute)  to a date variable
+  - **Hint:** Combine the `interval` and `lag` function to compute the number of minutes between scheduled departures for each destination. 
+
+#### *Answer 2:* 
+Note that we can't use the `time_hour` variable because it doesn't have a minute measure in it. But, as an alternative way to get scheduled time stamp, we could also use the `update(time_hour, minute=minute)` command to update this variable with the scheduled `minute` variable in the data. 
+
+```{r}
+flights10 %>% 
+  mutate(sch_datetime = make_datetime(year=year, month=month, day =day, hour = hour, min = minute)) %>%     # one way to get scheduled time/date variable
+  group_by(dest) %>%     # group by destination
+  arrange(sch_datetime) %>%    # make sure ordered earliest to latest
+  mutate(diff = interval(lag(sch_datetime), sch_datetime)/dminutes(1)) %>%   #get time between flights
+  summarize(medianMins = median(diff, na.rm=TRUE)) %>%
+  arrange(medianMins)
+```
+Atlanta and Chicago both have the shortest median time between flights of 15 minutes.
+
+
+### Problem 5
+MDSR textbook exercise 5.1 (2nd Ed. 6.10).
+
+
+#### *Answer:*
+
+```{r Q5}
+cubs_narrow <- Teams %>% filter(teamID=="CHN") %>% 
+  select(yearID,HR,HRA) %>%
+  gather(key="type",value="HR",HR,HRA) 
+  
+ggplot(cubs_narrow, aes(x=yearID,y=HR,group=type,color=type)) + 
+  geom_line() + 
+  geom_point() + 
+  scale_color_discrete(name="Homerun type",labels=c("hit by Cubs","Against Cubs")) + 
+  labs(title="Cubs yearly homeruns",x="Year",y="Number of homeruns")
+```
+
+### Problem 6
+MDSR textbook exercise 5.10 (2nd Ed. 5.6).
+
+- **Note:** The `fec` package doesn't appear to exist anymore. I went and downloaded the right datasets for you, but you have to go the [FEC website](https://classic.fec.gov/finance/disclosure/ftpdet.shtml#a2013_2014) to figure out what the columns mean. The following shows where I have saved each `FEC` file
+    - `Contributions by Individuals`:
+        - `https://raw.githubusercontent.com/mgelman/data/master/contributions.csv` 
+    - `Candidate Master File`:
+        - `https://raw.githubusercontent.com/mgelman/data/master/candidates.csv`
+
+- **Hint:** For `Figure 2.2`, the field `TRANSACTION_TP` helps determine whether the funds are supporting or against a candidate.
+
+- **Pro tip** Include the chunk option `cache=TRUE` in any R chunks that read in large data sets (such as `contributions`). This will cache results of these large R chunks which can reduce the time to `knit` your `.Rmd` after the initial cache. 
+
+
+
+#### *Answer:*
+
+```{r Q6,fig.height = 5, fig.width = 10}
+
+contributions <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/contributions.csv")
+candidates <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/candidates.csv")
+
+cont_cand <- inner_join(contributions,candidates,by="CAND_ID") #join contributions with candidates
+
+over_4m_general <- cont_cand %>% 
+  filter(TRANSACTION_PGI=="G") %>% #filter for general election
+  group_by(CAND_ID,CAND_NAME) %>% 
+  summarize(total_cont=sum(TRANSACTION_AMT)/1000000)  %>%
+  filter(total_cont>4) 
+
+ggplot(data=over_4m_general,aes(x=CAND_NAME,y=total_cont)) + 
+    geom_bar(stat="identity") + 
+    coord_flip() + 
+    labs(y="Money Spent (millions of USD)",x="") + 
+    scale_y_continuous(labels = dollar)
+
+over_4m_general_bytype <-  cont_cand %>% 
+  filter(TRANSACTION_PGI=="G") %>% #filter for general election
+  mutate(support=TRANSACTION_TP!="24A") %>% #create opposition flag
+  group_by(CAND_ID,CAND_NAME) %>%
+  mutate(total_cont=sum(TRANSACTION_AMT)/1000000) %>% 
+  filter(total_cont>4) %>%
+  group_by(CAND_ID,CAND_NAME,support) %>%
+  summarize(total_cont_type=sum(TRANSACTION_AMT)/1000000) 
+  
+
+ggplot(data=over_4m_general_bytype,aes(x=CAND_NAME,y=total_cont_type,fill=support)) + 
+    geom_bar(stat="identity") + 
+    coord_flip() + 
+    labs(y="Money Spent (millions of USD)",x="") + 
+    scale_fill_discrete(name="type",labels=c("against","supporting")) + 
+    scale_y_continuous(labels = dollar)
+```
+
+
+
