@@ -1,0 +1,55 @@
+---
+title: "Intro to Classifiers" 
+author: "ECON 122"
+date: "Day 13"
+output: 
+  github_document:
+    pandoc_args: --webtex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE, fig.width = 9, fig.height = 4)
+```
+
+```{r packageCheck, include=FALSE}
+# run the update below in the console if you get an error with str_view
+# update.packages(oldPkgs = "stringr", ask=FALSE, repos = "http://cran.us.r-project.org")
+mypacks <- c("ggplot2","dplyr","readr","tidyr")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+## Example: Predicting loan defaults
+A loan will default if either criteria below is met:
+
+- *Duration is longer than 2 years and credit amount is greater than 10,000 DM.*
+- *Duration is 2 years or less and credit amount is less than 2200 DM.*
+
+```{r}
+loans <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/CreditData.csv")
+loans <- loans %>%
+  mutate(c1 = Duration.in.month > 24 & Credit.amount > 10000, 
+         c2 = Duration.in.month <= 24 & loans$Credit.amount < 2200, 
+         prediction = ifelse(c1 | c2, "BadLoan", "GoodLoan") ) 
+(conf.mat <- with(loans,table(Good.Loan, prediction)))
+```
+
+### Question 1: 
+What is the confusion matrix if you used 36 months as your duration criteria value? What are the model evaluation stats (accuracy, precision, recall)?
+
+## Random guessing
+Suppose you have $n$ observations that you want to predict. We know that $n_0$ are actually failures and $n_1$ are actually successes.
+
+### Question 2
+You flip a fair coin to determine successes (head) and failures (tails) for each case. Write down the confusion matrix that you would expect under this scenario. I.e. what are the expected numbers in each of the four cells?
+
+### Question 3
+Use your confusion matrix from question 2 to compute accuracy, precision, and recall for this random (fair) guessing prediction method.
+
+### Question 4
+Repeat 2 and 3 but you predict a success with probability $p$ and a failure with probability $1-p$.
+
+### Question 5
+Repeat 2 and 3 but you predict a success with 100% probability! (i.e. all cases are predicted to be a success).

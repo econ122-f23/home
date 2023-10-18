@@ -1,0 +1,254 @@
+---
+title: "Network data and graphs"
+author: "ECON 122"
+date: "Day 20"
+output: 
+  ioslides_presentation:
+    incremental: true
+    widescreen: true
+    keep_md: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL, warning=FALSE, error=FALSE, fig.width = 9)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr","readr","tidyr", "statnet","circlize", "ggnetwork")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+
+
+
+## Statistical Analysis of networks
+```{r, echo=FALSE, fig.height=6, fig.width=10}
+facebook <- readRDS(gzcon(url("https://raw.githubusercontent.com/mgelman/data/master/facebook")))
+set.seed(77)
+gplot(facebook, gmode="graph",vertex.col = ifelse((facebook %v% "sex")=="male","lightblue","pink"))
+title("A facebook friends network")
+legend("bottomright",legend=c("female","male"), col=c("pink","lightblue"), pt.cex=1.5, pch=19)
+```
+
+## Networks
+
+- A network consists of vertices (nodes) and edges (ties)
+- Vertices: these are usually the "who" or cases in the network
+    + people, countries, banks
+- Edges: these connect vertices by some defined relationship 
+    + people: friendship
+    + countries: trade, migration
+    + banks: lending, borrowing
+
+## Networks
+
+- Edges may or may not be directional
+    + undirected: $A \leftrightarrow B$ 
+        - Ann is friends with Bob and Bob is friends with Ann
+    + directed:  $A \rightarrow B$ 
+        - Ann thinks she is friends with Bob but Bob doesn't consider Ann a friend
+
+## Network data
+
+- Data collected on networks can describe the vertex or edge
+- Vertex data
+    + variables measured on the vertices like sex, age, country GDP, etc
+    + represented in an $n \times p$ data frame ($p$=number of variables)
+- Edge data
+    + variables that describe the ties between two vertices
+    + undirected: $e_{AB}$ measures the amount of time that Ann and Bob spend together in a week
+    + directed: value can depend on the direction
+        - $e_{AB}$ measures the number of migrants from Algeria to Brazil
+        - $e_{BA}$ measures the number of migrants from Brazil to Algeria
+
+## Network data
+
+- Relationship data: how are the nodes connected to each other?
+- Two ways to store this information:
+    + Adjacency matrix: $n \times n$ matrix with 
+        - $(i,j)$ entry = 1 if $i \rightarrow j$, otherwise 0
+        - easy to "see", but can be sparse and large for large networks
+        - what do we know about the matrix if relationships are undirected? 
+    + edge lists: lists the pairs of vertices $(from, to)$ that have edges from the first vertex to the second vertex.
+    
+## Creating network data in R
+
+- The two common packages to make "network objects" are `network` and `igraph`
+- The R package `statnet` is a suite of packages designed to create, graph and analyze network data
+    + it includes `network` so that is the package we will use today
+
+## Simple example {.build}
+
+- 5 vertices A-E
+- vertex data: sex
+```{r}
+v_data <- data_frame(
+  id=c("A","B","C","D","E"),
+  sex = c("F","F","M","F","M") )
+v_data
+```
+
+## Simple example {.build}
+
+- This adjacency matrix defines our edges:
+```{r}
+netmat <- rbind(c(0,1,1,0,0),
+                c(0,0,1,1,0),
+                c(0,1,0,0,0),
+                c(0,0,0,0,0),
+                c(0,0,1,0,0)) 
+rownames(netmat) <- colnames(netmat) <- v_data$id
+netmat
+```
+
+## Simple example {.build}
+
+- Or we can define the relationship with this edge list of `r sum(netmat)` directional pairs:
+```{r}
+netlist <- rbind(c("A","B"),
+                 c("A","C"),
+                 c("B","C"),
+                 c("B","D"),
+                 c("C","B"),
+                 c("E","C"))
+netlist
+```
+
+## Simple example {.build}
+
+- We take either relationship object as the input to create our network object 
+- Here we use the adjacency matrix:
+```{r}
+mynet <- network(netmat, matrix.type="adjacency")
+mynet
+```
+
+## Simple example {.build}
+
+- Or via the edge list
+```{r}
+mynet <- network(netlist, matrix.type="edgelist")
+mynet
+```
+
+## Simple example {.build}
+
+- Notice that the network contains one vertex variable (attribute): `vertex.name`
+    + because the matrix contained row/col names and the list used character names in (from,to) matrix
+- You can access vertex data a couple ways
+    + using `%v%` operator
+```{r}
+mynet %v% "vertex.names"
+```
+
+- or using `get.vertex.attribute`
+```{r}
+get.vertex.attribute(mynet, "vertex.names")
+```
+
+## Simple example {.build}
+
+- We can add vertex variables using `set.vertex.attributes`:
+- Our data frame `v_data` matches our vertex order, so adding `sex` is easy:
+```{r}
+set.vertex.attribute(mynet, "sex", v_data$sex)
+mynet
+```
+
+## Simple example {.build}
+
+- We can create a basic plot with `gplot`
+```{r}
+gplot(mynet, displaylabels=TRUE)
+```
+
+## Simple example {.build}
+
+- We can add vertex info: color by `sex`
+```{r}
+sex_col = ifelse(v_data$sex == "F","yellow","blue")
+gplot(mynet, displaylabels=TRUE, vertex.col = sex_col)
+```
+
+## Simple example using `ggnetwork` {.build}
+
+- The package `ggnetwork` can create ggplot type network graphs
+- The function `ggnetwork` takes in a network objects and produces plotting coordinates:
+```{r}
+set.seed(1)
+(ggdata=ggnetwork(mynet))
+```
+
+## Simple example using `ggnetwork` {.build}
+
+- Plot with x/y generated coordinates
+```{r, fig.height= 3}
+ggplot(ggdata, aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges() +  geom_nodes() + coord_fixed() + ggtitle("Simple example")
+```
+
+## Simple example using `ggnetwork` {.build}
+
+- Add directional arrows, node labels and `sex` coloring
+```{r, fig.height= 3}
+ggplot(ggdata, aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges(arrow=arrow(length=unit(10,"pt"), type="closed")) + geom_nodes() + 
+  theme_blank() + # turns off arbitrary x/y coordinate choices
+  geom_nodelabel(aes(label=vertex.names, color=sex)) +  # sex is a node variable
+  coord_fixed() + ggtitle("Simple example")
+```
+
+## Facebook example {.build}
+
+- The `network` object was saved as a `RDS` object (single R object) 
+- Can read it in with `readRDS`: (note it is undirected)
+```{r, echo=TRUE, fig.height=6, fig.width=10}
+facebook <- readRDS(gzcon(url("https://raw.githubusercontent.com/mgelman/data/master/facebook")))
+facebook
+```
+
+## Facebook example {.build}
+
+```{r, fig.height=4}
+ggplot(data=ggnetwork(facebook), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_nodes(aes(color=sex), size=2) + 
+  geom_edges(color="gray50") + 
+  theme_blank() + coord_fixed() +
+  ggtitle("A facebook friends network")
+```
+
+## Graphing Networks {.build}
+
+- Graphs of the same network may have different vertex positions depending on random seed
+    + the graph is **relational** and  *usually* not tied to a coordinate system!
+    + show structure, important vertices ("actors"), subgroups, etc
+    + can also show node, edge info via color, size, shape, etc
+    + usually, edge length is arbitrary
+- There are many ways to display networks
+- `gplot` and `ggnetwork` defaults are both `fruchtermanreingold`
+    + example of a **force-directed** graphing algorithm
+    + pairs of connected nodes are attracted
+    + pairs of unconnected nodes are repulsed
+    + built by randomly arranging nodes
+    
+## Graphing Networks (simple example) {.build}
+
+```{r}
+par(mfrow=c(1,2))
+gplot(mynet, displaylabels=TRUE, vertex.col = sex_col, mode="random", main="random")
+gplot(mynet, displaylabels=TRUE, vertex.col = sex_col, main="force-directed")
+```
+
+## Graphing Networks (Facebook) {.build}
+
+- see `?gplot.layout` for layout options
+```{r}
+sex_colface = ifelse((facebook %v% "sex")=="male","lightblue","pink")
+par(mfrow=c(1,2))
+gplot(facebook, gmode="graph", vertex.col = sex_colface, mode="random", main="random")
+gplot(facebook, gmode="graph", vertex.col = sex_colface,  main="force-directed")
+```
+

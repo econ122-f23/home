@@ -1,0 +1,98 @@
+---
+title: "Other Classifiers" 
+author: "ECON 122"
+date: "Day 17"
+output: 
+  github_document:
+    pandoc_args: --webtex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE, fig.width = 9, fig.height = 4)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr","readr","tidyr", "ROCR", "boot","class","randomForest","e1071", "stringr","partykit","rpart")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+## Example 1: Spam using k-nn
+
+This example looks at a data set of about 4600 emails that are classified as spam or not spam, along with over 50 variables measuring different characteristic of the email. Details about these variables are found on the  [Spambase example ](http://archive.ics.uci.edu/ml/datasets/Spambase) on the machine learning data archive. The dataset linked to below is a slightly cleaned up version of this data. The only extra column in the data is `rgroup` which is a randomly assigned grouping variable (groups 0 through 99).
+
+Read the data in
+```{r}
+# tsv = tab separated values!
+spam <- read_delim("https://raw.githubusercontent.com/mgelman/data/master/spamD.txt", delim="\t", col_types = cols(spam = col_factor(levels=c("non-spam","spam")), .default = col_double()))
+glimpse(spam)
+```
+
+Here we fit a k-nn classifier using the 57 quantitative predictors from the spam data to an 80%/20% training and test set split. We used $k=10$.
+```{r}
+set.seed(7)
+n <- nrow(spam)
+train_index <- sample(1:n, size=round(.8*n))
+trainX <- spam %>% slice(train_index) %>% select(-rgroup, -spam)
+testX <- spam %>% slice(-train_index) %>% select(-rgroup, -spam)
+spam_knn1 <- knn(trainX, testX, cl= spam$spam[train_index], k=10)
+```
+
+#### Question 1
+Compute the accuracy, error rate and recall for the 20% test set. 
+
+#### Question 2
+Any statistical method that uses a distance metric can yield results that are sensitive to the scale of the variables. In the k-nn we are using a distance measure with the predictors. Use an `apply` command to compute the sd of the 57 predictors. Are they similar or different in value?
+
+#### Question 3
+We can use the `scale` function on a data frame to standardize each column of the test and training sets. Verify that the sd of the scaled training and test sets are now all equal to 1. 
+```{r}
+trainX <- scale(trainX)
+testX <- scale(testX)
+```
+
+#### Question 4
+Refit the k-nn classifier to the scaled predictor sets using $k=10$. How have accuracy, error and recall rates changed? 
+
+
+#### Question 5
+Refit the k-nn classifier using the scaled predictors from question 4, but this time let `k` vary from 1 to 30. Which value of k looks optimal for this data?
+
+- Note: Use the function below with `lapply` to get the predictions for each `k`
+- Hint: Once you have all the predictions, bind them together and use a `group_by` to calcualte `accuracy` and `recall`. Then use a `gather` to help plot them
+
+```{r}
+k <- seq(1,50,by=3)
+k
+knn_fn <- function(k)
+{
+  data_frame(k=k, prediction = knn.cv(scaledX, cl= spam$spam, k=k), y=spam$spam)
+}
+```
+
+## Example 2: Spam using tree methods
+Let's now consider tree-based methods for classifying spam. Let's go back to the original scale of the predictor variables (and incldue spam in the training/test data frames):
+```{r, include=FALSE}
+set.seed(7)
+n <- nrow(spam)
+train_index <- sample(1:n, size=round(.8*n))
+train <- spam %>% slice(train_index) %>% select(-rgroup)
+test <- spam %>% slice(-train_index) %>% select(-rgroup)
+```
+We will also steal the formula from the logistic model from day 18:
+```{r}
+xvars <- str_c(names(spam)[1:57], collapse="+")
+myform <- as.formula(str_c("spam ~ ", xvars))
+myform
+```
+
+#### Question 6
+Fit a decision tree to training data then compute the accuracy, error and recall for the test data. What predictors look to be the important predictors of spam based on this tree?
+
+
+#### Question 7
+Fit a random forest model to the spam data using the `randomForest` command. Use the default settings (with produce 500 trees with $m \approx \sqrt{p}$). Compute the accuracy, error and recall for the test data. What predictors look to be the important predictors of spam based on this method? Are they similar to the variable found in question 6?
+
+

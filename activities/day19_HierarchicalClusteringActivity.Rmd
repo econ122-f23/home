@@ -1,0 +1,65 @@
+---
+title: "Hierarchical Clustering Activity" 
+author: "ECON 122"
+date: "Day 19"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE, fig.width = 9, fig.height = 6)
+```
+
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr","readr","tidyr","sparcl","GGally")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+
+## Clustering on incoming student characteristics
+We will again look at the "classic" college data set of a random sample of colleges and universities. This time we will look at CA **AND** MA schools
+
+```{r}
+colleges <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/Colleges.csv")
+names(colleges)
+colleges2 <- colleges %>% filter(State %in% c("MA","CA"))
+table(colleges2$State)
+```
+
+We will also focus on the proportion of the incoming class that is in the top 10% or 25% of their HS class.
+```{r}
+coll_vars <- names(colleges2)[c(3,4,7,8)]
+coll_vars
+summary(colleges2[,coll_vars])
+```
+Let's cluster schools by their incoming class characteristics.
+
+#### Question 1
+Why should we standardize the variables of interest before using a clustering method?
+
+#### Question 2 
+Standardize our four variables of interest and fit a hierarchical clustering model. Plot the dendrogram with label names added.
+
+#### Question 3
+Which school seems most similar to University of San Francisco? Compare the SAT and HS class variable values to verify your answer.
+
+#### Question 4
+What height would you have to cut this tree to create 3 clusters? Use the `abline(h=)` function to add a cut line to the previous plot.
+
+#### Question 5 
+Make 3 clusters and add them as characters to the data frame. Plot a dendogram that identifies each cluster with a different color.
+
+- Hint: Use `cutree`
+- Hint: We can add cluster colors to the dendrogram using the `ColorDendrogram` function in the `sparcl` package. 
+```{r, eval=FALSE}
+ColorDendrogram(coll_hc, y=colleges2$cluster_hc3, labels=colleges2$College, branchlength = 1.6)
+```
+
+#### Question 6
+What are the characteristics of each cluster? Use either `density curves` or `boxplots` for the `SAT` and `HS` variables. How would you label the clusters in a way the general public would understand? 
+
+#### Question 7
+Do you prefer kmeans or hiearchical clustering? What are the pros and cons? 

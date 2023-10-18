@@ -1,0 +1,277 @@
+---
+title: "Cross Validation" 
+author: "ECON 122"
+date: "Day 15"
+output: 
+  ioslides_presentation:
+    incremental: true
+    widescreen: true
+    keep_md: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL, warning=FALSE, error=FALSE, fig.width = 9)
+```
+
+```{r packageCheck, include=FALSE}
+# run the update below in the console if you get an error with str_view
+# update.packages(oldPkgs = "stringr", ask=FALSE, repos = "http://cran.us.r-project.org")
+mypacks <- c("ggplot2","dplyr","readr","tidyr", "ROCR", "boot")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+
+
+## Cross-Validation  {.build}
+
+- Previously, we discussed the issue of over-fitting
+    + model is fitted using **training data set**
+    + model is applied to a different **test data set** 
+    + If the model is over-fit to the **training data**, it might not explain the **testing** data well
+    
+- Today we will discuss methods that can help prevent over-fitting
+
+    1. Simple split of training/testing set
+    2. k-fold cross-validation (CV)
+    3. leave one out cross validation (LOOCV)
+
+## Cross-validation error measure {.build}
+
+- When we discussed continuous variables, we used the `MSE` as our metric for a good model
+- If $Y$ is binary, the analogus metric is the **error** for a model (1-accuracy)
+$$
+Error = \dfrac{\sum_{\textrm{data}} I(y \neq \hat{y})}{n} = \dfrac{FN + FP}{n}= 1- Accuracy
+$$
+
+## Goal of Cross-validation {.build}
+
+- Make sure the `test error` is not too high so that we aren't over-fitting
+- If we have a good `test dataset` we can simply use that to evaluate the error
+- In most cases, we don't have a good `test dataset`
+    - For stock market data, we want to make sure the model works well on **future** data
+    - When predicting a recession, we also want to make sure the model works well on **future** data
+- If we don't have a good `test dataset` what is the next best alternative?
+    - Keep some portion of the `training dataset` aside for use as a `test dataset`
+
+## Simulated example {.build}
+
+- Suppose we have the following model describing the "true" relationship between `y` and `x`:
+$$
+\pi(x) = \dfrac{e^{-1 - x + x^2}}{1 + e^{-1 - x + x^2}}
+$$
+- Here is the probability curve along with $n=200$ simulated responses given a set of $x$'s
+
+```{r, echo=FALSE, fig.height=2.7}
+n<- 200
+set.seed(7813)
+x <- rnorm(n)
+x_test <- rnorm(n)
+# plogis is logistic function; qlogis is logit
+pi_truth <- function(x) plogis(-1 - 1*x + 1*x^2)
+set.seed(7)
+#training data
+y <- rbinom(n,1,pi_truth(x))
+y_test <- rbinom(n,1,pi_truth(x_test))
+mydata <- data_frame(x,y)
+mydata_test <- data_frame(x=x_test,y=y_test)
+ggplot(mydata, aes(x,y)) + geom_point() + stat_function(fun=pi_truth, size=1.5,color = "blue")
+```
+
+## Simulated example {.build}
+
+- Pretend we don't know the "true" relationship and we want to decide what order polynomial to use to fit the model
+
+```{r, echo=FALSE, warning=FALSE}
+plot_poly <- function(data, p)
+{
+  myglm <- glm(y ~ poly(x,p,raw=TRUE), data, family="binomial")
+  probs <- predict(myglm, type="response")
+  return(data_frame(p=p,x=x,probs=probs))
+}
+
+plot_pred <- bind_rows(lapply(c(1,5,10), plot_poly, data=mydata))
+plot_pred <- mutate(plot_pred,p=as.factor(p))
+
+ggplot(plot_pred,aes(x=x,y=probs)) + geom_line(size=1.5,aes(group=p,color=p)) + 
+  geom_point(data=mydata,aes(y=y)) + 
+  stat_function(fun=pi_truth,linetype=2,size=1.5) + 
+  ggtitle("True curve with polynomial fits")
+```
+
+## Simulated example {.build}
+
+- Ideally, we would plot the `training error` vs `testing error`
+
+```{r, echo=FALSE, cache=FALSE, warning=FALSE, fig.width=8}
+fit_poly <- function(p,train_data,test_data,t,type)
+{
+  myglm <- glm(y ~ poly(x,p,raw=TRUE), train_data, family="binomial")
+  cost <- function(y, pi) 1-mean(y==(pi>t))
+  probs <- predict(myglm, newdata=test_data,type="response")
+  #error <- cv.glm(data, myglm, cost)$delta[1]
+  error <- cost(test_data$y,probs)
+  return(data_frame(p,error,type))
+}
+
+
+#fit_poly(1,mydata,mydata,0.5,"train")
+#fit_poly(1,mydata,mydata_test,0.5,"test")
+
+train_errors <- bind_rows(lapply(1:10, fit_poly, mydata,mydata,0.5,"train"))
+test_errors <- bind_rows(lapply(1:10, fit_poly, mydata,mydata_test,0.5,"test"))
+
+errors <- bind_rows(train_errors,test_errors)
+
+errors %>% 
+  #gather(key=type, value=error, train,test) %>% 
+  ggplot(aes(x=p, y=error, color=type)) + 
+  geom_line(aes(linetype=type),size=1.5) + 
+  labs(x="polynomial degree", y="Error",title="Classification error rate") + 
+  scale_x_continuous(breaks = 1:10)
+```
+
+## Simple sample split {.build .smaller}
+- What if we don't have a `testing dataset`?
+- One idea is to split the data 50/50 into training and testing
+
+
+```{r, echo=FALSE, fig.height=3.5}
+
+errors_split <- bind_rows(train_errors,test_errors)
+
+set.seed(20)
+n <- nrow(mydata)
+for(i in 1:3) {
+  train_index <- sample(1:n, size=round(.5*n))
+  train <- mydata[train_index,]
+  test <- mydata[-train_index,]
+  split_test_errors <- bind_rows(lapply(1:10, fit_poly, train,test,0.5,paste("split test ",i)))
+  errors_split <- bind_rows(errors_split,split_test_errors)
+}
+
+  ggplot(filter(errors_split,type=="test")) + 
+  geom_line(aes(x=p, y=error, color=type),size=1.5) +
+    geom_line(data=filter(errors_split,type!="train",type!="test"),aes(x=p,y=error, linetype=type),size=1) + 
+  labs(x="polynomial degree", y="Error",title="Classification error rate") + 
+  scale_x_continuous(breaks = 1:10)
+
+```
+
+- What are the downsides? 
+    - Lots of variation due to random sampling
+    - Smaller sample size because we use less of the data
+
+## k-fold cross validation {.build}
+
+- create  $k-$folds (non-overlapping subsets) of the data of similar sizes 
+- training data: $k-1$ folds 
+- test data: the one left-out fold
+- error for fold $i$: $err_i$ is the error rate for this test set 
+- For each of the $k$ folds we compute $err_i$. 
+- k-fold CV error: 
+$$
+cv_{(k)} = \dfrac{1}{k}\sum_i err_i
+$$
+-  Ameliorates both of the issues with simple sample split because we average over multiple instances
+
+## k-fold cross validation {.build}
+
+<center>
+
+<img src="img/kfolds.png" width=700>
+
+</center>
+
+
+## Leave one out cross validation (LOOCV)  {.build}
+
+- training data:  $n$ training sets of $n-1$ cases
+- test data: $n$ test sets of 1 case
+- error for test set $i$:  $err_i = I(y_i \neq \hat{y}_i)$  
+- LOOCV error: average over all $n$ test sets 
+$$
+cv_{(n)} = \dfrac{1}{n}\sum_i err_i
+$$
+- In the limit as $k \rightarrow n$, CV becomes LOOCV 
+
+
+
+## Computing CV errors {.build}
+
+- A number of packages can do cross validation for a variety of model types
+- The package `boot` contains a function `cv.glm(data,glm,cost,K)` that computes cross-validation error estimates for a given glm
+    - error given by `delta[1]` output from this function
+- For logistic regression, we just need to define the error `cost` function:
+``` 
+cost <- function(y, pi) 1-mean(y==(pi>t))
+```
+- `y` are binary (0/1) responses 
+- `pi` are fitted (estimated) probabilities
+- `t` is our threshold
+
+## LOOCV errors {.build}
+
+- LOOCV procedure pretty similar to true `test` error. Of course in reality, we can't compute true `test` error
+
+```{r,echo=FALSE}
+fit_poly_cv <- function(p,data,t,type,k)
+{
+  myglm <- glm(y ~ poly(x,p,raw=TRUE), data, family="binomial")
+  cost <- function(y, pi) 1-mean(y==(pi>t))
+  probs <- predict(myglm, type="response")
+  error <- cv.glm(data, myglm, cost,k)$delta[1]
+  return(data_frame(p,error,type))
+}
+
+set.seed(20)
+LOOCV_errors <- bind_rows(lapply(1:10, fit_poly_cv, mydata,0.5,"LOOCV",n))
+errors <- bind_rows(train_errors,test_errors,LOOCV_errors)
+
+errors %>% 
+  ggplot(aes(x=p, y=error, color=type)) + 
+  geom_line(aes(linetype=type),size=1.5) + 
+  labs(x="polynomial degree", y="Error",title="Classification error rate") + 
+  scale_x_continuous(breaks = 1:10)
+```
+
+## CV errors {.build}
+
+- $k=5,10$ pretty similar to LOOCV but faster
+
+```{r, echo=FALSE}
+set.seed(20)
+CV5_errors <- bind_rows(lapply(1:10, fit_poly_cv, mydata,0.5,"K=5",5))
+CV10_errors <- bind_rows(lapply(1:10, fit_poly_cv, mydata,0.5,"K=10",10))
+
+errors <- bind_rows(train_errors,test_errors,LOOCV_errors,CV5_errors,CV10_errors)
+
+ggplot(filter(errors,type=="test")) + 
+  geom_line(aes(x=p, y=error, color=type),size=1.5) +
+    geom_line(data=filter(errors,type!="train",type!="test"),aes(x=p,y=error, linetype=type),size=1) + 
+  labs(x="polynomial degree", y="Error",title="Classification error rate") + 
+  scale_x_continuous(breaks = 1:10)
+```
+
+
+## LOOCV vs. k-fold CV {.build}
+
+- k-fold: 
+    - less computational power/time than LOOCV 
+    - "intermediate" level of bias, but less bias than assessing error without cross-validation
+    - Remember to `set.seed(n)` before your command or else you will get a different answer each time. Why? 
+- LOOCV:
+    - approximately unbiased estimates of the true error
+    - Don't need to `set seed`. Why?
+
+- The authors of `ISLR` claim that empirical evidence suggest using k-fold cv with $k=5$ or $k=10$.
+
+## Things to keep in mind about LOOCV and k-fold CV {.build}
+
+- When we use these methods, what assumptions are we making about the training vs. testing sets?
+- Implicitly, we are assuming that the training data is similar to the testing data that we care about
+- This assumption might not always hold
+    - Using 2016 election data to predict 2020. It could be that the population has changed, or something changed that isn't captured in our observable values
+    - Using the relationship between hours of study and test scores in this class may not be a good representation of future classes

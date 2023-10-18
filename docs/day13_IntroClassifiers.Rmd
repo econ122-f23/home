@@ -1,0 +1,254 @@
+---
+title: "Intro to Classifiers" 
+author: "ECON 122"
+date: "Day 13"
+output: 
+  ioslides_presentation:
+    incremental: true
+    widescreen: true
+    keep_md: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL, warning=FALSE, error=FALSE, fig.width = 9)
+```
+
+```{r packageCheck, include=FALSE}
+# run the update below in the console if you get an error with str_view
+# update.packages(oldPkgs = "stringr", ask=FALSE, repos = "http://cran.us.r-project.org")
+mypacks <- c("ggplot2","dplyr","readr","tidyr")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+## Classification
+
+- Last class we discussed models related to predicting continuous numerical data
+    - Test score
+    - Stock price
+
+- In some cases, we want to explain or predict binary data (0 or 1)
+    - Will it rain today? 
+    - Will I get a job at Amazon?
+    - Will I get into graduate school?
+
+- This is called a **classification model**
+  - **Binary Response variable:** we classify (i.e. predict) each case as a "success" (1) or "failure" (0)
+
+## Examples of classification
+- Medicine: Use DNA sequence data to determine who will get a disease (or not)
+- Filtering: Identify spam emails
+- Transportation: Predicting whether people will walk, take the bus, or bike
+- Purchasing: determine whether individuals will buy a product based on other variables
+- [Recidivism:](http://advances.sciencemag.org/content/4/1/eaao5580.full) Predict which defendents or paroles will commit another violent crime
+
+## Classifiers: more formal definition {.build}
+
+- **Framework:** We have a (binary) categorical response $Y$ and $p$ explanatory variables $X_1, X_2, ..., X_p$ that may (or may not) be related to $Y$.
+- **Classifier:** A classifier is a model or algorithm that assigns (predicts) a response to cases based on their explanatory variable values. 
+- **Prediction vs. forecasting:**
+    + prediction (or classifying) a categorical response means assigning an outcome (e.g. default/no default)
+    + forecasting a categorical response means assigning a probability $\pi$ of an outcome (e.g an 80% chance of default)
+    + most classifiers  can do both prediction and forecasting
+
+## Evaluating classifiers: confusion matrix {.build}
+
+- Let's assume we have a binary (1=success or 0=failure) response $Y$
+    + $n_1$ successes and $n_0$ failures
+- Our model predicts a binary (1=success or 0=failure) response $\hat{Y}$
+    + $\hat{n}_1$ successes and $\hat{n}_0$ failures
+- The  four possible combinations of truth and model outcomes are summarized in a **confusion matrix**:
+
+data/model | Predict: failure ($\hat{Y}=0$) | Predict: success  ($\hat{Y}=1$) | total
+--- | --- | --- | ---
+Truth: failure  ($Y=0$) | true negative (TN) | false positive (FP) |  $n_0$ 
+Truth: success ($Y=1$) | false negative (FN) | true positive (TP) |  $n_1$ 
+total | $\hat{n}_0$ | $\hat{n}_1$ | $n$
+
+## Evaluating classifiers: confusion matrix {.build}
+
+- Sometimes we have to rely on predictions without really knowing the truth
+- Depending on the situation, we may weight FP and FN differently
+
+- If we are predicting whether a person is guilty ($Y=1$), is a FP or FN worse?
+- IF we are predicting whether somebody has COVID ($Y=1$), is a FP or FN worse? 
+
+
+## Loan defaults {.build}
+
+A loan will default ("success") if the criteria below is met:
+
+- *Credit amount is greater than 3,000 DM. (close to the mean)*
+
+```{r}
+loans <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/CreditData.csv")
+loans <- loans %>%
+  mutate(prediction = ifelse(Credit.amount > 3000 , "BadLoan", "GoodLoan") ) 
+(conf.mat <- with(loans,table(Good.Loan, prediction)))
+```
+So TP = `r conf.mat[1,1]`, FP = `r conf.mat[2,1]`, FN = `r conf.mat[1,2]`, TN = `r conf.mat[2,2]`
+
+## Evaluating classification models {.build}
+
+- In shaded region: TP = `r conf.mat[1,1]` red points and FP = `r conf.mat[2,1]` blue points
+```{r, echo=FALSE}
+ggplot(loans, aes(x=Duration.in.month,y=Credit.amount, color=Good.Loan)) + 
+  geom_point() + 
+  geom_segment(x=0,y=3000,xend=Inf,yend=3000, color="black") +
+  geom_text(x=40, y=12000,label="Predict Default",show.legend = FALSE,size=10,color="red") +
+  annotate("rect",xmin=0,xmax=Inf,ymin=3000,ymax=Inf, fill="blue", alpha=.1)+
+  ggtitle("Duration vs. Credit by default type \nCriteria: Credit Amount>3000")
+```
+
+
+## Evaluating classification models: Accuracy {.build}
+
+- **Accuracy**: proportion of data classified correctly (how often is the model correct?)
+$$\dfrac{TP + TN}{n}$$
+```{r}
+conf.mat
+(134+454)/1000
+```
+
+- Loans model has an accuracy of `r 100*sum(diag(prop.table(conf.mat)))`%
+- Of all cases, `r 100*sum(diag(prop.table(conf.mat)))`% are correctly predicted using our prediction criteria
+
+## Evaluating classification models: Accuracy {.build}
+
+- Can use `prop.table` with two-way table and sum diagonal entries:
+```{r}
+prop.table(conf.mat)
+sum(diag(prop.table(conf.mat)))
+```
+
+- or `dplyr` if predicted and actual responses are coded the same:
+```{r}
+loans %>% summarize(accuracy = mean(Good.Loan == prediction))
+```
+
+## Evaluating classification models {.build}
+
+```{r, echo=FALSE, fig.show='asis', results='hide'}
+accuracy_fn <- function(CreditLim, data) {
+  data <- data %>%
+  mutate(prediction = ifelse(Credit.amount > CreditLim , "BadLoan", "GoodLoan"))   %>%
+  summarize(Credit=first(CreditLim), accuracy = mean(Good.Loan == prediction))
+return(data)
+}
+accuracy_fn(4000,loans)
+accuracy_fn(1000,loans)
+summary(loans$Credit.amount)
+eval_stats <- lapply(seq(0,19000,by=1000), accuracy_fn, data=loans) %>% bind_rows()
+eval_stats
+ggplot(eval_stats, aes(x=Credit, y=accuracy)) + geom_point() + geom_line() + 
+  labs(x="Credit Amount", y="rate", title="Accuracy rate as Credit amount cutoff varies")
+```
+
+## Evaluating classification models: Precision {.build}
+
+- **Precision**: proportion of predicted successes that are actually successes
+$$\dfrac{TP}{\hat{n}_1}$$
+-  how often is a positive classification correct?
+- assessing "confirmation" 
+```{r}
+conf.mat
+134/(134+246)
+```
+- Of all loans predicted to default,  `r 100*round(prop.table(conf.mat,2)[1,1],3)`% actually did default
+
+## Evaluating classification models: Precision {.build}
+
+```{r}
+prop.table(conf.mat,2)
+loans %>% summarize(precision = sum(Good.Loan == "BadLoan" & 
+                     prediction == "BadLoan")/sum(prediction == "BadLoan"))
+loans %>% filter(prediction == "BadLoan") %>%
+  summarize(precision = sum(Good.Loan == "BadLoan")/n())
+```
+
+
+## Evaluating classification models {.build}
+
+```{r, echo=FALSE, fig.show='asis', results='hide'}
+AP_fn <- function(CreditLim, data) {
+  data <- data %>%
+  mutate(prediction = ifelse(Credit.amount > CreditLim , "BadLoan", "GoodLoan") )   %>%
+  summarize(Credit=first(CreditLim), 
+            accuracy = mean(Good.Loan == prediction), 
+            precision = sum(Good.Loan == "BadLoan" &  prediction == "BadLoan")/sum(prediction == "BadLoan"))
+return(data)
+}
+eval_stats <- lapply(seq(0,19000,by=1000), AP_fn, data=loans) %>% bind_rows()
+eval_stats %>% gather(key="measure",value="rate", accuracy:precision) %>%
+ggplot(aes(x=Credit, y=rate, color=measure)) + geom_point() + geom_line() + 
+  labs(x="Credit amount", y="rate", title="Accuracy and Precision rates as Credit amount cutoff varies")
+```
+
+## Evaluating classification models: Recall {.build}
+
+- **Recall/sensitivity**: proportion of true successes that are predicted successes
+$$\dfrac{TP}{n_1}$$
+- how often can we correctly identify a success?
+- measuring effectiveness
+```{r}
+conf.mat
+134/(134+166)
+```
+- Of all loans that defaulted, `r 100*round(prop.table(conf.mat,1)[1,1],3)`% were correctly predicted to default
+
+## Evaluating classification models: Recall  {.build}
+
+```{r}
+prop.table(conf.mat,1)
+loans %>% summarize(recall = sum(Good.Loan == "BadLoan" & 
+                     prediction == "BadLoan")/sum(Good.Loan == "BadLoan"))
+loans %>% filter(Good.Loan == "BadLoan") %>%
+  summarize(recall = sum(prediction == "BadLoan")/n())
+```
+
+## Evaluating classification models {.build}
+
+How do you think `recall` will change as we increase the credit limit cutoff for a `Bad Loan`? 
+
+```{r, echo=FALSE, fig.show='asis', results='hide'}
+APR_fn <- function(CreditLim, data) {
+  data <- data %>%
+ mutate(prediction = ifelse(Credit.amount > CreditLim , "BadLoan", "GoodLoan") )   %>%
+  summarize(Credit=first(CreditLim), 
+            accuracy = mean(Good.Loan == prediction), 
+            precision = sum(Good.Loan == "BadLoan" &  prediction == "BadLoan")/sum(prediction == "BadLoan"),
+            recall = sum(Good.Loan == "BadLoan" & 
+                     prediction == "BadLoan")/sum(Good.Loan == "BadLoan"))
+return(data)
+}
+eval_stats <- lapply(seq(0,19000,by=1000), APR_fn, data=loans) %>% bind_rows()
+eval_stats %>% gather(key="measure",value="rate", accuracy:recall) %>%
+ggplot(aes(x=Credit, y=rate, color=measure)) + geom_point() + geom_line() + 
+  labs(x="Credit amount", y="rate", title="Accuracy, Precision and Recall rates as Credit amount cutoff varies")
+```
+
+## Evaluating classification models {.build}
+
+- Why do we need so many evaluation metrics? 
+```{r}
+table(loans$Good.Loan)
+```
+- In the raw data, 70% of the loans are good
+- A model that predicts all loans are good (no loans are bad) will have 70% accuracy
+    - Is this a good model? 
+
+- Intuitively we know that it's not a great model. `recall` reminds us that we are doing a horrible job in predicting bad loans that are actually bad
+- We would like a model that performs well on all metrics (not always possible as there are trade-offs)
+
+## Summary
+
+- **Classification model**: Explain or predict binary data (0 or 1)
+- Evaluating classification models
+    - **Accuracy**: Proportion of data classified correctly 
+    - **Precision**: Of the predicted successes, how many are actual successes?
+    - **Recall/Sensitivity**: Of the actual successes, how many did correctly predict? 
+
+- Some algorithms can be misleading if the data is heavily skewed towards "success" or "failure" 
+    - A simple "algorithm" that predicts all observations = success will lead to high `accuracy`

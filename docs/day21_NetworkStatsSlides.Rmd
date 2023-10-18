@@ -1,0 +1,456 @@
+---
+title: "Network statistics"
+author: "ECON 122"
+date: "Day 21"
+output: 
+  ioslides_presentation:
+    incremental: true
+    widescreen: true
+    keep_md: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL, warning=FALSE, error=TRUE, fig.width = 9)
+```
+
+
+```{r packageCheck, include=FALSE}
+# if you get an error with ggnetwork, try (re)installing with:
+# install.packages("ggnetwork", type="source")
+# also install igraph but don't load the library
+mypacks <- c("ggplot2","dplyr","readr","tidyr", "statnet","ggnetwork", "intergraph", "gridExtra")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+
+
+
+## Statistical Analysis of networks
+```{r, echo=FALSE, fig.height=5, fig.width=10}
+facebook <- readRDS(gzcon(url("https://raw.githubusercontent.com/mgelman/data/master/facebook")))
+set.seed(77)
+(gface <- ggplot(data=ggnetwork(facebook), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges(color="gray50") + 
+  geom_nodes(aes(color=sex), size=2) + 
+  theme_blank() + coord_fixed() +
+  ggtitle("A facebook friends network") )
+```
+
+
+## Statistical Analysis of networks
+
+- Imminent Brewery FB page: post "likers" connected if they like the same post
+```{r, echo=FALSE, fig.height=5.5, fig.width=10, cache=TRUE}
+facebookImm_Aug <- readRDS(gzcon(url("https://raw.githubusercontent.com/mgelman/data/master/facebookImm_Aug17.RDS"))) 
+set.seed(77)
+ggplot(data=ggnetwork(facebookImm_Aug), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges(color="black", size=.4) + 
+  geom_nodes(color="darkred", size=2) + 
+  theme_blank() + coord_fixed() +
+  ggtitle("Imminent Brewery: Facebook post likers (August 2017)")
+```
+
+## Simple example {.build}
+
+```{r, echo=FALSE}
+v_data <- data_frame(
+  id=c("A","B","C","D","E"),
+  sex = c("F","F","M","F","M") )
+netlist <- rbind(c("A","B"),
+                 c("A","C"),
+                 c("B","C"),
+                 c("B","D"),
+                 c("C","B"),
+                 c("E","C"))
+mynet <- network(netlist, matrix.type="edgelist")
+set.vertex.attribute(mynet, "sex", v_data$sex)
+gplot(mynet, displaylabels=TRUE)
+```
+
+## Simpsons network
+
+- 15 Simpsons characters with undirected edges defined for characters who interact "a lot"
+```{r, fig.height=5, fig.width=10, echo=FALSE}
+Simpsons <- readRDS(gzcon(url("https://raw.githubusercontent.com/mgelman/data/master/Simpsons")))
+#Simpsons
+#gplot(Simpsons, gmode="graph", displaylabels = TRUE, edge.col="lightgray", pad=1)
+set.seed(7)
+ggplot(data=ggnetwork(Simpsons), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges() + 
+  geom_nodelabel_repel(aes(label=vertex.names)) + 
+  geom_nodes(size=3, color="darkred") +
+  theme_blank() + coord_fixed() 
+```
+
+## Summary Stats for Networks {.build}
+
+- For most quantitative variables, we can compute summary statistics that inform
+    - center (mean, median)
+    - spread (sd, IQR, range)
+    - skew (quartiles, percentiles) 
+- We came compute similar stats for data from nodes or edges
+    - e.g. proportion of females in facebook nodes
+- Stats can also be used to describe a network's relational data
+    - node and edge stats: related to relationships
+    - Overall network stats: size, density, clustering, ...
+    - unless stated otherwise, we will assume undirected networks
+
+
+## Node statistics
+
+- **Centrality** stats help assess the *prominence* or *importance* of each node in the network
+    - **Degree** - tells us how many edges each node has
+    - **Betweenness** - tells us how many important paths cross through that node
+    - **Closeness** - tells us how close a node is to other points
+    - nodes that stand out with high levels of centrality are the "key players"
+-  We can use *summaries* of node-level stats to describe the entire network
+    - e.g look at average degree, or the distribution of degree across all nodes
+
+## Node statistics: degree {.build}
+
+- **Degree**: number of edges connected to a vertex
+    - directed networks: in, out and total degree counts
+- Here we use `degree` from the `sna` package 
+    - `sna::degree(network, gmode=)` with gmode `digraph` for directed graphs (default) and `graph` for undirected
+    
+## Node statistics: degree {.build}
+
+```{r, echo=FALSE, fig.height=3}
+set.seed(1)
+ggplot(ggnetwork(mynet, arrow.gap=.04), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges(arrow=arrow(length=unit(10,"pt"), type="closed")) + geom_nodes() + 
+  geom_nodelabel(aes(label=vertex.names)) + coord_fixed() + theme_blank()
+```
+```{r}
+sna::degree(mynet) # total degree
+sna::degree(mynet, cmode="indegree") # number edges in
+sna::degree(mynet, cmode="outdegree") # number edges out
+```
+    
+## Node statistics: degree {.build}
+    
+- Add degree as a network node variable    
+```{r}
+(deg_S <- sna::degree(Simpsons, gmode="graph") )
+Simpsons %v% "vertex.names"
+set.vertex.attribute(Simpsons, "degree", deg_S)
+```
+- then vary node size by degree   
+
+
+## Node statistics: degree {.build}
+    
+```{r, echo=FALSE}
+set.seed(7)
+ggplot(data=ggnetwork(Simpsons), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges() + 
+  geom_nodelabel_repel(aes(label=vertex.names)) + 
+  geom_nodes(aes(size=degree), color="darkred") +
+  theme_blank() + coord_fixed() 
+```
+
+## Node statistics: betweeness {.build}
+
+- **Betweenness**: measures the extent to which a node sits "between" pairs of other nodes. 
+    + a high level of betweenness means that a node is in a position to control the flow of "information" in a network
+
+$$
+Between(v)= \sum_{s,t\in V\setminus\{v\}}\frac{\sigma_v(s,t)}{\sigma(s,t)}
+$$
+- $\sigma(s,t)$ # of shortest paths from $s$ to $t$  
+- $\sigma_v(s,t)$ # of shortest paths from $s$ to $t$ that pass through $v$
+
+
+## Node statistics: betweeness {.build}
+
+```{r, include=FALSE}
+(btw_S <- betweenness(Simpsons, gmode="graph") )
+set.vertex.attribute(Simpsons, "betweeness", btw_S)
+Simpsons %v% "vertex.names"
+```
+- How does degree and betweneess differ?
+```{r, fig.height=5, fig.width=10, echo=FALSE}
+set.seed(7)
+ggplot(data=ggnetwork(Simpsons), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges() + 
+  geom_nodelabel_repel(aes(label=vertex.names)) + 
+  geom_nodes(aes(size=betweeness), color="darkred") +
+  theme_blank() + coord_fixed() 
+```
+
+## Node statistics: closeness {.build}
+
+- **Closeness**: measures how close a node is to all other nodes in the network
+    + a high level of closeness means that only a few steps are needed to get to all other nodes in the network
+
+$$
+Close(v)= \frac{1}{avg \ dist}=  \frac{1}{\frac{\sum_{i\neq v}{d(v,i)}}{N-1}}= \frac{N-1}{\sum_{i\neq v}{d(v,i)}} 
+$$
+
+- $d(v,i)$: shortest distance between $v$ and $i$
+- $N$: the number of nodes
+
+
+## Node statistics: closeness {.build}
+
+- Gives you a better sense of distance than betweeness (see Smithers)
+   
+```{r, include=FALSE}
+(cls_S <- closeness(Simpsons, gmode="graph") )
+set.vertex.attribute(Simpsons, "closeness", cls_S)
+Simpsons %v% "vertex.names"
+```
+
+
+```{r, fig.height=5, fig.width=10, echo=FALSE}
+set.seed(7)
+ggplot(data=ggnetwork(Simpsons), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges() + 
+  geom_nodelabel_repel(aes(label=vertex.names)) + 
+  geom_nodes(aes(size=closeness), color="darkred") +
+  theme_blank() + coord_fixed() 
+```
+
+
+## Comparing networks via node statistics {.build}
+
+- You can treat these node stats like any other type of data
+- Compare within a network to find unusual cases
+    - "central" players
+- Compare across networks to compare relational structures
+    - may make sense to standardize values to compare extremeness nodes
+    
+    
+## Comparing degree {.build}
+
+- All three networks have at least one high outlier, but different degree scales (different number of nodes)
+```{r, echo=FALSE}
+degree_fn <- function(net)
+{  
+  d <- sna::degree(net, gmode="graph")
+  data_frame(degree = d)
+}
+degrees <- lapply(list(facebook, Simpsons, facebookImm_Aug), degree_fn)
+degrees[[1]]$name <- "facebook"
+degrees[[2]]$name <- "Simpsons"
+degrees[[3]]$name <- "Imminent"
+
+degree_df <- bind_rows(degrees)
+ggplot(degree_df, aes(x=name, y=degree)) + 
+  geom_boxplot()+ 
+  ggtitle("Degree distribution")
+```
+
+
+## Comparing degree {.build}
+
+- Highest degree in facebook is over 4 SD's above mean while the largest in Simpsons is just over 2 SD's above.
+```{r, echo=FALSE}
+degree_fn <- function(net)
+{  
+  d <- sna::degree(net, gmode="graph")
+  data_frame(degree = scale(d)[,1])
+}
+degrees <- lapply(list(facebook, Simpsons, facebookImm_Aug), degree_fn)
+degrees[[1]]$name <- "facebook"
+degrees[[2]]$name <- "Simpsons"
+degrees[[3]]$name <- "Imminent"
+
+degree_df <- bind_rows(degrees)
+ggplot(degree_df, aes(x=name, y=degree)) + 
+  geom_boxplot() + 
+  ggtitle("Degree distribution (standardized)")
+```
+
+
+## Comparing betweenness {.build}
+
+- Facebooks have a few people with extreme betweenness
+```{r, echo=FALSE}
+degree_fn <- function(net)
+{  
+  d <- betweenness(net, gmode="graph") 
+  data_frame(betweenness = d)
+}
+degrees <- lapply(list(facebook, Simpsons, facebookImm_Aug), degree_fn)
+degrees[[1]]$name <- "facebook"
+degrees[[2]]$name <- "Simpsons"
+degrees[[3]]$name <- "Imminent"
+
+degree_df <- bind_rows(degrees)
+ggplot(degree_df, aes(x=name, y=betweenness)) + 
+  geom_boxplot()+ 
+  ggtitle("Betweenness distribution")
+```
+
+
+## Comparing betweenness {.build}
+
+
+```{r, echo=FALSE, fig.height=6, fig.width=10, cache=TRUE}
+set.vertex.attribute(facebookImm_Aug, "between", betweenness(facebookImm_Aug, gmode="graph") )
+ggplot(data=ggnetwork(facebookImm_Aug), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges(color="black", size=.4) + 
+  geom_nodes(aes(size=between), color="darkred") + 
+  theme_blank() + coord_fixed() +
+  ggtitle("Imminent Brewery: Facebook post likers (August 2017)")
+```
+
+## Comparing betweenness {.build}
+
+```{r, echo=FALSE}
+ggplot(data_frame(sex = facebook %v% "sex", between = betweenness(facebook, gmode="graph"))) + 
+  geom_boxplot(aes(x=sex, y=between)) + 
+  scale_y_sqrt() + 
+  ggtitle("facebook: betweenness by sex")
+```
+
+
+## Comparing closeness {.build}
+
+- The Facebook network nodes have low closeness, but similar values for all nodes
+- Simpsons and Imminent have higher closeness, with two Simpson's outliers 
+```{r, echo=FALSE}
+degree_fn <- function(net)
+{  
+  # sna closeness doesn't work for facebook network
+  # don't have a good explanation why it doesn't
+  d <- igraph::closeness(asIgraph(net), normalized=TRUE)
+  data_frame(closeness = d)
+}
+degrees <- lapply(list(facebook, Simpsons, facebookImm_Aug), degree_fn)
+degrees[[1]]$name <- "facebook"
+degrees[[2]]$name <- "Simpsons"
+degrees[[3]]$name <- "Imminent"
+
+degree_df <- bind_rows(degrees)
+ggplot(degree_df, aes(x=name, y=closeness)) + 
+  geom_boxplot()+ 
+  ggtitle("Closeness distribution")
+```
+
+## Comparing closeness {.build}
+
+- Why is closeness so different? 
+
+```{r, echo=FALSE, fig.height=5, fig.width=10, cache=TRUE}
+set.vertex.attribute(facebookImm_Aug, "closeness", closeness(facebookImm_Aug, gmode="graph") )
+face_cl <- igraph::closeness(asIgraph(facebook), normalized=TRUE)
+set.vertex.attribute(facebook, "closeness", face_cl)
+g1<- ggplot(data=ggnetwork(facebookImm_Aug), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges(color="black", size=.4) + 
+  geom_nodes(aes(size=closeness), color="darkred") + 
+  theme_blank() + coord_fixed() +
+  ggtitle("Imminent Brewery: Facebook post likers (August 2017)")
+g2 <- ggplot(data=ggnetwork(facebook), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges(color="black", size=.4) + 
+  geom_nodes(aes(size=closeness), color="darkred") + 
+  theme_blank() + coord_fixed() +
+  ggtitle("facebook friends")
+grid.arrange(g1,g2, ncol=2)
+```
+
+
+## Network level statistics {.build}
+
+- Some stats describe features of the entire network's relational structure
+    - size, number of subcomponents
+    - diameter
+    - density
+    - transitivity (cluster)
+
+## Network level statistics: Size {.build}
+
+- **Size**: how many vertices?
+```{r}
+network.size(mynet)  
+network.size(facebook)
+network.size(facebookImm_Aug)
+```
+
+## Network level statistics: Subgroups {.build}
+
+- **Number of subgroups**: how many subgroups (connected networks), or components, in undirected networks
+```{r, results='hide'}
+num_compF <- components(facebook)
+num_compImm <- components(facebookImm_Aug)
+```
+```{r}
+num_compF
+num_compImm
+```
+There are 10 subgroups in the facebook friends network and one in the Imminent network
+
+## Network level statistics:  Subgroups {.build}
+
+```{r, results='hide'}
+comp_distF <- component.dist(facebook)
+```
+```{r}
+comp_distF$membership[1:10]
+comp_distF$csize
+comp_distF$cdist[1:10]
+```
+- The largest subgraph has 47 nodes. 
+- There are 3 subgraphs of size one, 1 of size two, etc. 
+
+## Network level statistics:  Diameter {.build}
+
+- **Diameter**: max of the shortest paths across all node pairs
+    - max of the largest component
+    - measures the compactness of a networks
+    - easiest way to get diameter is with `igraph`
+```{r}
+igraph::diameter(asIgraph(facebook))  # diameter
+igraph::diameter(asIgraph(facebookImm_Aug))  # diameter
+igraph::diameter(asIgraph(Simpsons))  # diameter
+```
+Both facebook and Simpons networks only takes at most 4 steps to connect any two nodes, while the Imminent network takes just 3 steps
+
+## Network level statistics:  Diameter  {.build}
+
+- Diameter seems low but central nodes that connect the graph pretty well
+
+```{r, include=FALSE}
+facebook_large <- component.largest(facebook, result="graph")
+```
+```{r, fig.height=5, fig.width=10, echo=FALSE}
+set.seed(2)
+ggplot(data=ggnetwork(facebook_large), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges() + theme_blank() + coord_fixed() + geom_nodes(size=5, color="red")
+```
+
+
+## Network level statistics: Density {.build}
+
+- **Density**: proportion of edges observed in the network to the max number possible
+- Let $T$ be the number of ties (edges) in the network with $n$ vertices
+$$
+den_{directed} = \dfrac{T}{n(n-1)} \ \ \ den_{undirected} = \dfrac{2T}{n(n-1)}
+$$
+```{r}
+network.edgecount(facebook); gden(facebook)
+network.edgecount(facebookImm_Aug); gden(facebookImm_Aug)
+```
+Imminent network has higher density even though network sizes are similar.
+
+
+## Network level statistics:  Transitivity {.build}
+
+- **Transitivity** is the proportion of closed triangles in the networked to the total number of (open and closed) triangles
+$$
+Transitivity = \dfrac{3 \times \textrm{# triangles}}{\textrm{# connected triples}}
+$$
+    - common measure of network **clustering**
+    - are your friends also my friends?
+```{r}
+gtrans(facebook)
+gtrans(facebookImm_Aug)
+```
+Slightly higher clustering in the Imminent network
+
+
+

@@ -1,0 +1,16 @@
+ggplot2
+dplyr
+readr
+tidyr
+network
+ergm
+networkDynamic
+tergm
+ergm.count
+statnet.common
+sna
+tsna
+statnet
+ggnetwork
+intergraph
+gridExtra

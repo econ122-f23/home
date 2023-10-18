@@ -1,0 +1,56 @@
+---
+title: "Decision Trees" 
+author: "ECON 122"
+date: "Day 16"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE, fig.width = 9, fig.height = 4)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr", "rpart","partykit","NHANES")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+### Diabetes Example:
+Let's take a look at the diabetes example from textbook section 8.5. Here we data frm the NHANES study, and only want to consider complete cases using the variables: `Gender, Diabetes, Age, BMI, PhysActive, HHIncome`. 
+```{r}
+table(NHANES$Gender, NHANES$Diabetes)
+NHANES %>% group_by(Gender, Diabetes) %>% count()
+diabetes <- NHANES %>% select(Gender, Diabetes, Age, BMI, PhysActive, HHIncome) %>% na.omit()
+diabetes
+diabetes %>% group_by(Gender, Diabetes) %>% count() %>% group_by(Gender) %>% mutate(propByGender = n/sum(n))
+prop.table(table(diabetes$Gender, diabetes$Diabetes),1)
+```
+There are 7,555 complete cases (rows) with these variables. Of the females in this group, about 8.3% have diabetes while about 9.8% of males do. 
+
+#### Question 1
+Fit a decision tree just using the variables `Gender` and `Age`. What tree does it produce? What are your error and accuracy rates?
+
+
+#### Question 2
+The default control parameter for the `rpart` splitting algorithm is 1% (`cp=0.01`). This means that a split will occur from a parent node if the overall purity of the children is at least 1% better than the parent. Do you have to *increase* or *decrease* this value to make your tree bigger (i.e. more splits)? Play around with this value to try to get your tree from question 1 to split. Here is the argument to add to the `rpart` command: `control=rpart.control(cp=.01)`. Change the 0.01 value to something higher or lower from this default setting. 
+
+- Note: Using the argument `gp = gpar(fontsize = 8)` to change the font size can make your trees easier to visualize. For example `plot(as.party(diab_rpart),gp = gpar(fontsize = 8))`
+
+
+
+#### Question 3
+The book authors fit the model below to all variables except income:
+
+```{r}
+diab_rpart <- rpart(Diabetes ~ Gender + Age + BMI + PhysActive, data=diabetes, control=rpart.control(cp=.005, minbucket = 30))
+diab_rpart
+plot(as.party(diab_rpart))
+```
+What happens if you omit the `minbucket` part of the control argument? What does including this option do to your tree?
+
+
+
+#### Question 4
+Fit the model from question 3 without the `minbucket` option to a training dataset composed of just 2009-10 survey responses. Then use this model to predict diabetes cases for the 2011-2012 survey. What are your `test` and `training` `error` and `accuracy` rates? `Precision` and `recall`?

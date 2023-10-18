@@ -1,0 +1,220 @@
+---
+title: "Statistical learning and linear models" 
+author: "ECON 122"
+date: "Day 12"
+output: 
+  ioslides_presentation:
+    incremental: true
+    widescreen: true
+    keep_md: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE, eval=TRUE, message=F, include=T,comment=NULL, warning=FALSE, error=FALSE, fig.height=3.5)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr","stringr","readr","readxl","tidyr","lubridate")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+```{r, include=FALSE}
+options(scipen=999) #remove scientific notation
+```
+
+## What is Statistical Learning? 
+
+- In general, statistical learning entails learning about the behavior of one variable from other variables
+- Imagine we observe data for variable $Y$ along with other variables $X=(X_1,X_2,...,X_p)$
+- If we assume there is some relationship between $Y$ and $X$, we can write the very general form
+    - $Y = f(X) + \epsilon$
+        - $f(X)$ refers to a mathematical function
+        - $\epsilon$ refers to a random error term
+        
+## What is Statistical Learning? 
+
+- What does the `random` error term $\epsilon$ represent?
+    - Theoretically, all the things we have no hope of predicting
+- What properties should it have?
+    - mean $0$. Why? 
+    - independent of $X$. Why?
+
+- What are some examples of $Y = f(X) + \epsilon$?
+  - $Y$=grade, $X_1$=effort, $X_2$=prior knowledge, $X_3$=good netflix shows, $\epsilon$=getting sick
+  - $Y$=salary, $X_1$=education, $X_2$=age, $X_3$=major, $X_4$=family resources, $\epsilon$=luck with interview
+  
+        
+## What is Statistical Learning? 
+- Statistical learning: `estimating` $f(X)$
+- Why should we estimate $f(X)$?
+1. Prediction
+    - $\hat{Y}$ = predicted Y
+    - $\hat{Y} = \hat{f}(X)$ because our best prediction for $\epsilon$ is 0
+    - For prediction we don't really care what form $\hat{f}(X)$ takes, it can be a `black box`.
+2. Inference
+    - Actually understanding how changes in $X$ affect $Y$ (more prevelant in Economics)
+    - Ex: how much my grade will go up if I spend 1 more hour studying for the exam?
+
+
+## Inference vs Prediction {.build}
+
+- Let's analyze the relationship between test score and hours studied
+
+```{r}
+time=(0:50)
+sim_data <- data.frame(time,grade=14*time^(0.5)+rnorm(length(time),0,2))
+ggplot(data=sim_data,aes(x=time,y=grade)) + geom_point(alpha=0.5) + geom_smooth(method="lm",se=FALSE) + 
+   geom_smooth(method="lm",formula=y ~ poly(x,3,raw=TRUE),se=FALSE,color="red")
+```
+
+## Inference   {.build}
+
+- Q: How much will my score improve if I study 1 more hour? 
+
+```{r}
+lm_output <- lm(grade~time,data=sim_data) %>% print()
+```
+
+- $grade = `r round(coef(lm_output)[1],2)` + `r round(coef(lm_output)[2],2)` \times time$
+- $\frac{d(grade)}{d(time)}=`r round(coef(lm_output)[2],2)`$ 
+
+
+## Prediction {.build .smaller}
+
+- Q: What will my grade be if I study for $x$ hours?
+- Let's use a more flexible model - adding $x^2 \text{and }x^3$ terms
+
+```{r}
+lm_output_flex <- lm(grade ~ poly(time, 3, raw = TRUE), data = sim_data) %>% print()
+```
+
+- $grade = `r round(coef(lm_output_flex)[1],2)` + `r round(coef(lm_output_flex)[2],2)` \times time `r round(coef(lm_output_flex)[3],2)` \times time^2 + `r round(coef(lm_output_flex)[4],5)` \times time^3$
+
+- $\frac{d(grade)}{d(time)}=`r round(coef(lm_output_flex)[2],2)` `r round(coef(lm_output_flex)[3],2)`\times 2time + `r round(coef(lm_output_flex)[4],5)`\times 3time^2$ 
+
+- If we just want to predict scores, our more flexible model is better
+- However, if we want to perform inference, the relationship between $grade$ and $time$ is now more complex
+
+## When to focus on prediction vs inference?
+
+It really depends on the question we are trying to answer
+
+- Inference
+    - **How does one extra year of school affect wages?**
+    - We **really** want to understand the relationship between the two variables because we want to inform policy
+    - Does one extra year of schooling result in higher wages, or do smarter people (who are predisposed to higher wages) just get more schooling?
+        - Has implications for policy
+      
+- Prediction
+    - **Which emails are spam?**
+    - As long as the spam filter works, we don't really care what is going on under the hood
+    - More common in the private sector where you just want it to work
+
+## Assessing Model Accuracy {.build}
+
+- We will be working with many different models in this class 
+    - we need a way to assess their performance
+- Since our models generate predictions, one obvious criteria is how good those predictions are
+- `mean squared error` (MSE) calcualtes the average squared error of the predictions
+    - $MSE = \frac{1}{n} \sum^n_{i=1} (y_i-\hat{f}(x_i))^2$
+    - Why do we need to take the square? 
+         - Want to penalize both over- and under- estimates 
+         - Squared has nice mathematical properties but you could also use absolute value
+    
+## Fitting a very simple model {.build .smaller}
+
+- Let's go back to our test and hours data
+
+```{r}
+ggplot(data=sim_data,aes(x=time,y=grade)) + geom_point(alpha=1) 
+```
+
+- The simplest model has one parameter that isn't even a function of $X$
+    - $Y = f(X) + \epsilon = \mu + \epsilon$
+
+
+## Fitting a very simple model {.build .smaller}
+
+- If we want to minimize the `MSE`, what should we set $\hat{\mu}$ to? 
+- Let's just choose 50
+
+```{r}
+sim_data$predicted=50
+ggplot(data=sim_data,aes(x=time,y=grade)) + geom_point(alpha=1)  + geom_hline(aes(yintercept=predicted)) + geom_segment(aes(xend=time,yend=predicted),color="red")
+```
+
+- $MSE = \frac{1}{n} \sum^n_{i=1} (y_i-50)^2 =$ `r round(mean((sim_data$grade-sim_data$predicted)^2),2)`
+
+
+## Fitting a very simple model {.build .smaller}
+
+- We can use math to solve for the best predictor
+- Choose the $\mu$ that minimizes the `MSE`: $min_\mu(\frac{1}{n} \sum^n_{i=1} (y_i-\mu)^2)$
+- Take the derivative with respect to $\mu$: $\frac{dMSE}{d\mu}=\frac{-2}{n}\sum^n_{i=1} (y_i-\mu)$
+- Set it to zero: $\frac{-2}{n}\sum^n_{i=1} (y_i-\mu)=0$
+
+$$
+\begin{aligned}
+\sum^n_{i=1} (y_i-\mu)&=0 \\
+\sum^n_{i=1}y_i&=\sum^n_{i=1}\mu \\
+\sum^n_{i=1}y_i&=n\times \mu \\
+\mu=\frac{1}{n}\sum^n_{i=1}y_i&=mean(y_i) 
+\end{aligned}
+$$
+
+## Fitting a very simple model {.build .smaller}
+
+- Now we know the `mean` is the best predictor if we have to choose one number
+    - Intuitively this makes sense because by construction the mean is the expected value
+
+```{r}
+sim_data$predicted2=mean(sim_data$grade)
+ggplot(data=sim_data,aes(x=time,y=grade)) + geom_point(alpha=1)  + geom_hline(aes(yintercept=predicted2)) + geom_segment(aes(xend=time,yend=predicted2),color="red")
+```
+- $MSE = \frac{1}{n} \sum^n_{i=1} (y_i-\hat{\mu})^2 =$ `r round(mean((sim_data$grade-sim_data$predicted2)^2),2)`
+
+## Introducing more complexity: Linear regression {.build}
+
+- The case where we have 1 parameter that isn't a function of $X$ is instructive but not practical
+- We can increase our flexibility by adding one parameter that is a function of $X$
+  - General formula for Statistical Learning is $Y = f(X) + \epsilon$
+  - `univariate linear regression` is  $f(X)=\beta_0 + X\beta_1$
+  - Our new model is then $Y = \beta_0 + X\beta_1 + \epsilon$
+- How do we estimate $\beta_0$ and $\beta_1$?
+   - Minimize `MSE`: $min_{\beta_0,\beta_1}(\frac{1}{n} \sum^n_{i=1} (y_i-(\beta_0+X\beta_1))^2)$ 
+   - $\hat{\beta_1}=\frac{\sum^n_{i=1}(x_i-\bar{x})(y_i-\bar{y})}{\sum^n_{i=1}(x_i-\bar{x})^2}=\frac{cov(X,Y)}{var(X)}$
+   - $\hat{\beta_0}=\bar{y}-\hat{\beta_1}\bar{x}$
+
+## Introducing more complexity: Linear regression {.smaller}
+
+```{r, fig.height=2.5}
+lm_output <- lm(grade~time,data=sim_data) %>% print()
+sim_data$predicted3=lm_output$fitted.values
+ggplot(data=sim_data,aes(x=time,y=grade)) + geom_point(alpha=1)  + geom_smooth(method="lm",se=FALSE) + geom_segment(aes(xend=time,yend=predicted3),color="red")
+```
+- $MSE = \frac{1}{n} \sum^n_{i=1} (y_i-(\hat{\beta_0}+X\hat{\beta}_1)^2) =$ `r round(mean((sim_data$grade-sim_data$predicted3)^2),2)` 
+
+## Why not just have the most flexible model?
+
+- We see that increasing flexibility will always reduce the `MSE`.
+- Why shouldn't we always increase flexibility?
+- We need to distinguish between `training` and `testing` data
+    - `training` data is the data we use to fit the model (eg. I might use data from this class)
+    - `testing` data is the data that we want to predict outcomes for (eg. next semester a student asks me to predict their grade)
+- Other examples: 
+    - `train` model on past stock market behavior: goal is to `predict` future behavior
+    - `train` model on what factors are correlated with crime: `predict` future behavior
+    
+## The problem of `over-fitting`
+
+- A very flexible model will tend to `over-fit` the training data. Why?
+- This happens because the flexible model tends to fit all the random indiosyncracies of the training data
+- Ex: Imagine I want to predict where college students like to shop
+    - An inflexible model would only allow me to use type of outlet: online, brick and mortor, on campus, etc.
+    - A very flexible model would allow me to capture exactly which outlets: Amazon, Hot Topic, Urban Outfitters
+    - While this may capture the habits of CMC students, it may be too specific to generalize to other college students
+- What's the point? As we venture into the land of many models, there exists a delicate balance between `improved fit` from flexibility and risk of `over-fitting`
+

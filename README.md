@@ -21,6 +21,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
 -   [GitHub reference full guide ](https://happygitwithr.com/index.html)
 -   Additional free resource: [R for Data Science](http://r4ds.had.co.nz/)
 
+[This week](#currentweek)
 ------------------------------------------------------------------------
 ### Assignments due
 
@@ -35,11 +36,15 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
   - Solutions [.Rmd](PS/PS3-solution.Rmd) [.md](PS/PS3-solution.md)
 - [Problem Set 4](https://classroom.github.com/a/wjWMNFm6) (due **10/09**)
   - Solutions [.Rmd](PS/PS4-solution.Rmd) [.md](PS/PS4-solution.md)
+- [Problem Set 5](https://classroom.github.com/a/hKb4xybW) (due **11/10**)
+- [Team Project 2](https://classroom.github.com/a/I0xMnmkh) (due **11/20**) [[Description]](https://github.com/econ122-f23/teamproject2)
+- [Problem Set 6](https://classroom.github.com/a/AmBx7PPT) (due **11/27**)
+- [Final Project]() (due **12/15**) [[Description]](FinalProject.md)
+
 ------------------------------------------------------------------------
 ### Week 1 (08/28)
 
 **Monday** (intro, GitHub, test assignment) 
-
 -   before class:
     - Try to set up R, RStudio, Git, GitHub account (See [GitHub reference quick guide](https://github.com/econ122-f23/github-classroom-for-students) and See [GitHub reference full guide](https://happygitwithr.com/index.html))
 -   in class: 
@@ -48,7 +53,6 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
     -   [test assignment](https://classroom.github.com/a/c6lpvr3V)
 
 **Wednesday** (reproducibility, R Markdown)
-
 -   before class:
     -   complete test assignment and push **both** .rmd and .md files to GitHub.
     -   read MDSR Chapter 1 and Appendix D
@@ -184,6 +188,164 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
 -   before class:
     -   study for exam 1
 -   in class:
-    -   take exam 1
+    -   take [exam 1](MT1_scores.md)
+
+------------------------------------------------------------------------
+### <a name="currentweek"></a>Week 8 (10/16)
+
+**Monday**
+  - Fall Break!!
+  
+**Wednesday** (Statistical Learning)
+-   before class:
+    -   read [ISLR](https://link.springer.com/book/10.1007/978-1-4614-7138-7) section 2.1-2.2, 3.1
+-   in class:
+    -   day 12 slides: [.Rmd](docs/day12_StatLearning.Rmd)  [.html](https://econ122-f23.github.io/home/day12_StatLearning.html)
+    -   day 12 activity: [.Rmd](activities/day12_StatLearningActivity.Rmd) [.md](activities/day12_StatLearningActivity.md)
+        - solutions: [.Rmd](activities/solutions/day12_StatLearningActivity_Solution.Rmd) [.md](activities/solutions/day12_StatLearningActivity_Solution.md)
+
+------------------------------------------------------------------------
+### Week 9 (10/23)
+
+**Monday** (Intro to Classifiers)
+
+-   before class:  
+    -  Read ISLR section 4.1-4.2
+    -  Read [this](https://www.dataschool.io/simple-guide-to-confusion-matrix-terminology/) article explaining what a confusion matrix is
+    -  Read [this](https://towardsdatascience.com/accuracy-recall-precision-f-score-specificity-which-to-optimize-on-867d3f11124) helpful article on evaluating classification models
+-   in class:
+    -   day 13 slides: [.Rmd](docs/day13_IntroClassifiers.Rmd)  [.html](https://econ122-f23.github.io/home/day13_IntroClassifiers.html)
+    -   day 13 activity: [.Rmd](activities/day13_IntroClassifiersActivity.Rmd) [.md](activities/day13_IntroClassifiersActivity.md)
+         - solutions: [.Rmd](activities/solutions/day13_IntroClassifiersActivity_Solution.Rmd) [.md](activities/solutions/day13_IntroClassifiersActivity_Solution.md)
+
+**Wednesday** (Logistic regression)
+-   before class:
+    -   Read ISLR section 4.3
+    -   Read MDSR section 8.4.4 on ROC curves
+-   in class:
+    -   day 14 slides: [.Rmd](docs/day14_LogisticRegressionSlides.Rmd)  [.html](https://econ122-f23.github.io/home/day14_LogisticRegressionSlides.html)
+    -   day 14 activity: [.Rmd](activities/day14_LogisticRegressionActivity.Rmd) [.md](activities/day14_LogisticRegressionActivity.md)
+         - solutions: [.Rmd](activities/solutions/day14_LogisticRegressionActivity_Solution.Rmd) [.md](activities/solutions/day14_LogisticRegressionActivity_Solution.md)
+
+------------------------------------------------------------------------
+### Week 10 (10/30)       
+
+**Monday** (Cross Validation)
+-   before class:
+    - Read ISLR section 5.1
+    - Read MDSR section 8.4.1 (10.3.2)
+    - Read [this blog](https://www.r-bloggers.com/whats-the-difference-between-machine-learning-statistics-and-data-mining/) on statistical learning vs. machine learning
+-   in class:
+    -   day 15 slides: [.Rmd](docs/day15_CrossValidationSlides.Rmd)  [.html](https://econ122-f23.github.io/home/day15_CrossValidationSlides.html)
+    -   day 15 activity: [.Rmd](activities/day15_CrossValidationActivity.Rmd) [.md](activities/day15_CrossValidationActivity.md)
+        - solutions: [.Rmd](activities/solutions/day15_CrossValidationActivity_Solution.Rmd) [.md](activities/solutions/day15_CrossValidationActivity_Solution.md)
+        
+**Wednesday** 
+  - No class: Professor going to conference to present research
+
+------------------------------------------------------------------------
+### Week 11 (11/06)
+
+**Monday** (Decision Trees)
+
+-   before class:
+    - Read MDSR section 8.2.1-8.2.3 (11.1.1)
+    - Read ISLR section 8.1
+-   in class:
+    -   quick note on [TeamProject2](https://github.com/econ122-f22/teamproject2)
+    -   day 16 slides: [.Rmd](docs/day16_DecisionTreeSlides.Rmd)  [.html](https://econ122-f23.github.io/home/day16_DecisionTreeSlides.html)
+    -   day 16 activity: [.Rmd](activities/day16_DecisionTreeActivity.Rmd) [.md](activities/day16_DecisionTreeActivity.md)
+        - solutions: [.Rmd](activities/solutions/day16_DecisionTreeActivity_Solution.Rmd) [.md](activities/solutions/day16_DecisionTreeActivity_Solution.md)
+        
+**Wednesday** (Other classifiers)
+
+-   before class:
+    - Read MDSR section 8.2.4-8.2.5 (11.1.2-11.1.3)
+    - Read ISLR section 2.2.3 (`k-nn`), 8.2.1-8.2.2 (`bagging\random forest`)
+-   in class:
+    -   day 17 slides: [.Rmd](docs/day17_OtherClassifiersSlides.Rmd)  [.html](https://econ122-f23.github.io/home/day17_OtherClassifiersSlides.html)
+    -   day 17 activity: [.Rmd](activities/day17_OtherClassifiersActivity.Rmd) [.md](activities/day17_OtherClassifiersActivity.md)
+        - solutions: [.Rmd](activities/solutions/day17_OtherClassifiersActivity_Solution.Rmd) [.md](activities/solutions/day17_OtherClassifiersActivity_Solution.md)
+
+------------------------------------------------------------------------
+### Week 12 (11/13)
+
+**Monday** (k-means clustering)
+-   before class:
+    - Read ISLR section 10.3-10.3.1
+    - Read MDSR section 9.1,9.1.2 (12.1,12.1.2)
+-   in class:
+    -   day 18 slides: [.Rmd](docs/day18_KmeansClusteringSlides.Rmd)  [.html](https://econ122-f23.github.io/home/day18_KmeansClusteringSlides.html)
+    -   day 18 activity: [.Rmd](activities/day18_KmeansClusteringActivity.Rmd) [.md](activities/day18_KmeansClusteringActivity.md)
+        - solutions: [.Rmd](activities/solutions/day18_KmeansClusteringActivity_Solution.Rmd) [.md](activities/solutions/day18_KmeansClusteringActivity_Solution.md)
+
+
+**Wednesday** (Hierarchical clustering)
+-   before class:
+    - Read ISLR section 10.3.2 
+    - Read MDSR section 9.1.1 (12.1.1)
+-   in class:
+    -   day 19 slides: [.Rmd](docs/day19_HierarchicalClusteringSlides.Rmd)  [.html](https://econ122-f23.github.io/home/day19_HierarchicalClusteringSlides.html)
+    -   day 19 activity: [.Rmd](activities/day19_HierarchicalClusteringActivity.Rmd) [.md](activities/day19_HierarchicalClusteringActivity.md)
+        - solutions: [.Rmd](activities/solutions/day19_HierarchicalClusteringActivity_Solution.Rmd) [.md](activities/solutions/day19_HierarchicalClusteringActivity_Solution.md)
+
 ------------------------------------------------------------------------
 
+### Week 13 (11/20)
+
+**Monday** (Networks Intro)
+-   before class:
+    - Read MDSR section 16.1-16.2 (20.1,20.2)
+-   in class:
+    -   [Final project proposal](FinalProject.md)
+    -   [exam 2 explanation](exam2.md)
+    -   day 20 slides: [.Rmd](docs/day20_NetworkGraphsSlides.Rmd)  [.html](https://econ122-f22.github.io/home/day20_NetworkGraphsSlides.html)
+    -   day 20 activity: [.Rmd](activities/day20_NetworkGraphsActivity.Rmd) [.md](activities/day20_NetworkGraphsActivity.md)
+         - solutions: [.Rmd](activities/solutions/day20_NetworkGraphsActivity_Solution.Rmd) [.md](activities/solutions/day20_NetworkGraphsActivity_Solution.md)
+
+**Wednesday** (Thanksgiving!)
+-  Prepare Thanksgiving meal
+-  Eat Thanksgiving meal
+-  Sleep
+
+------------------------------------------------------------------------
+### Week 14 (11/27)
+
+**Monday** (Networks Statistics)
+-   before class:
+    -   Finish up `PS6`
+-   in class:
+    -   [Team Project 2 results](projects/results.csv)
+          - [past results](projects/results_2021.csv)
+    -   Discuss `Final Project` proposals
+    -   day 21 slides: [.Rmd](docs/day21_NetworkStatsSlides.Rmd)  [.html](https://econ122-f23.github.io/home/day21_NetworkStatsSlides.html)
+    -   day 21 activity: [.Rmd](activities/day21_NetworkStatsActivity.Rmd) [.md](activities/day21_NetworkStatsActivity.md)
+         - solutions: [.Rmd](activities/solutions/day21_NetworkStatsActivity_Solution.Rmd) [.md](activities/solutions/day21_NetworkStatsActivity_Solution.md)
+
+**Wednesday** (Exam 2)
+-   before class:
+    -   study for exam 2
+    -   bring a calculator
+-   in class:
+    -   take [exam 2]
+    
+------------------------------------------------------------------------  
+
+### Week 15 (12/04)
+
+**Monday** (Networks Activity)
+-   before class 
+    -   read MDSR 16.3 and 16.4 (20.3,20.4)
+    -   read [this article](https://www.maa.org/sites/default/files/pdf/Mathhorizons/NetworkofThrones%20%281%29.pdf) on the Game of Thrones network
+-   in class
+    -   day 22 slides: [.Rmd](docs/day23_NetworkGoTSlides.Rmd)  [.html](https://econ122-f23.github.io/home/day22_NetworkGoTSlides.html)
+    -   day 22 activity: [.Rmd](activities/day22_GoTActivity.Rmd) [.md](activities/day22_GoTActivity.md)
+           - solutions: [.Rmd](activities/solutions/day22_GoTActivity_Solution.Rmd) [.md](activities/solutions/day22_GoTActivity_Solution.md)
+
+**Wednesday** (Work on Final Project)
+-   before class:
+    -   Start to make progress on Final Project
+-   in class: 
+    -   Work with partners on Final Project
+    -   Fill out evaluations
+    -   Celebrate end of classes!! 
