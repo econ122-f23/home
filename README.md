@@ -191,7 +191,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
     -   take [exam 1](MT1_scores.md)
 
 ------------------------------------------------------------------------
-### <a name="currentweek"></a>Week 8 (10/16)
+### Week 8 (10/16)
 
 **Monday**
   - Fall Break!!
@@ -205,7 +205,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
         - solutions: [.Rmd](activities/solutions/day12_StatLearningActivity_Solution.Rmd) [.md](activities/solutions/day12_StatLearningActivity_Solution.md)
 
 ------------------------------------------------------------------------
-### Week 9 (10/23)
+### <a name="currentweek"></a>Week 9 (10/23)
 
 **Monday** (Intro to Classifiers)
 
