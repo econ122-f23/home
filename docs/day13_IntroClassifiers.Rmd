@@ -61,11 +61,11 @@ lapply(mypacks, library, character.only=TRUE)  # load all packages
     + $\hat{n}_1$ successes and $\hat{n}_0$ failures
 - The  four possible combinations of truth and model outcomes are summarized in a **confusion matrix**:
 
-data/model | Predict: failure ($\hat{Y}=0$) | Predict: success  ($\hat{Y}=1$) | total
+data/model | Predict: success  ($\hat{Y}=1$) | Predict: failure ($\hat{Y}=0$)  | total
 --- | --- | --- | ---
-Truth: failure  ($Y=0$) | true negative (TN) | false positive (FP) |  $n_0$ 
-Truth: success ($Y=1$) | false negative (FN) | true positive (TP) |  $n_1$ 
-total | $\hat{n}_0$ | $\hat{n}_1$ | $n$
+Truth: success ($Y=1$) | true positive (TP) | false negative (FN) |  $n_1$ 
+Truth: failure  ($Y=0$) | false positive (FP) | true negative (TN) |  $n_0$ 
+total | $\hat{n}_1$| $\hat{n}_0$  | $n$
 
 ## Evaluating classifiers: confusion matrix {.build}
 
@@ -78,9 +78,11 @@ total | $\hat{n}_0$ | $\hat{n}_1$ | $n$
 
 ## Loan defaults {.build}
 
-A loan will default ("success") if the criteria below is met:
+- Let's use our loans data as an example
 
-- *Credit amount is greater than 3,000 DM. (close to the mean)*
+Simple model/prediction: A loan will default ("success") if the criteria below is met:
+
+- *Credit amount is greater than 3,000. (close to the mean)*
 
 ```{r}
 loans <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/CreditData.csv")
@@ -145,6 +147,9 @@ eval_stats
 ggplot(eval_stats, aes(x=Credit, y=accuracy)) + geom_point() + geom_line() + 
   labs(x="Credit Amount", y="rate", title="Accuracy rate as Credit amount cutoff varies")
 ```
+
+  - Potential downsides to this metric?
+  - For a rare disease, predict no occurrence. Accuracy would be high
 
 ## Evaluating classification models: Precision {.build}
 
