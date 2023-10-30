@@ -133,6 +133,8 @@ errors %>%
   scale_x_continuous(breaks = 1:10)
 ```
 
+- Which polynomial would you choose?
+
 ## Simple sample split {.build .smaller}
 - What if we don't have a `testing dataset`?
 - One idea is to split the data 50/50 into training and testing

@@ -205,7 +205,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
         - solutions: [.Rmd](activities/solutions/day12_StatLearningActivity_Solution.Rmd) [.md](activities/solutions/day12_StatLearningActivity_Solution.md)
 
 ------------------------------------------------------------------------
-### <a name="currentweek"></a>Week 9 (10/23)
+### Week 9 (10/23)
 
 **Monday** (Intro to Classifiers)
 
@@ -228,7 +228,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
          - solutions: [.Rmd](activities/solutions/day14_LogisticRegressionActivity_Solution.Rmd) [.md](activities/solutions/day14_LogisticRegressionActivity_Solution.md)
 
 ------------------------------------------------------------------------
-### Week 10 (10/30)       
+### <a name="currentweek"></a>Week 10 (10/30)       
 
 **Monday** (Cross Validation)
 -   before class:
