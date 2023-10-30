@@ -1,0 +1,204 @@
+---
+title: "Cross Validation - SOLUTION" 
+author: "ECON 122"
+date: "Day 15"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE, fig.width = 9, fig.height = 4)
+```
+
+```{r packageCheck, include=FALSE}
+# run the update below in the console if you get an error with str_view
+# update.packages(oldPkgs = "stringr", ask=FALSE, repos = "http://cran.us.r-project.org")
+mypacks <- c("ggplot2","dplyr","readr","tidyr","boot","stringr","ROCR")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+This example looks at a data set of about 4600 emails that are classified as spam or not spam, along with over 50 variables measuring different characteristic of the email. Details about these variables are found on the  [Spambase example ](http://archive.ics.uci.edu/ml/datasets/Spambase) on the machine learning data archive. The dataset linked to below is a slightly cleaned up version of this data. The only extra column in the data is `rgroup` which is a randomly assigned grouping variable (groups 0 through 99).
+
+Read the data in
+```{r}
+# tsv = tab separated values!
+spam <- read_delim("https://raw.githubusercontent.com/mgelman/data/master/spamD.txt", delim="\t", col_types = cols(spam = col_factor(levels=c("non-spam","spam")), .default = col_double()))
+#glimpse(spam)
+```
+
+#### Question 1:
+What proportion of these emails are labled as spam?
+
+#### *Answer:*
+```{r answer Q1}
+table(spam$spam)
+prop.table(table(spam$spam))
+```
+About `r round(prop.table(table(spam$spam))[2]*100)`% of cases are spam. 
+
+### 1. Fit  large model
+First fit a model will all 57 predictors. Rather than write out this *huge* equation, you can paste it together and run the string through the `as.formula` function:
+```{r}
+names(spam)
+xvars <- str_c(names(spam)[1:57], collapse="+")
+xvars
+myform <- as.formula(str_c("spam ~ ", xvars))
+myform
+```
+The use this formula in your `glm`:
+```{r}
+myglm <- glm(myform, data= spam, family="binomial")
+summary(myglm)
+```
+
+#### Question 2
+Use the `cv.glm` function to find the 5-fold CV error for this model. Do this twice using thresholds of 0.2 and 0.5. How do they change when changing the threshold? 
+
+#### *Answer:*
+
+```{r answerQ2}
+set.seed(1)
+cost <- function(y, pi) 1-mean(y==(pi>0.5))
+out5 <- cv.glm(spam, myglm, K=5, cost)
+out5$delta[1]
+cost <- function(y, pi) 1-mean(y==(pi>0.2))
+out2 <- cv.glm(spam, myglm, K=5, cost)
+out2$delta[1]
+```
+A threshold of 0.5 gives a CV error of about `r round(out5$delta[1],2)` while dropping the threshold to 0.2 increases the error to about `r round(out2$delta[1],2)`. It looks like we have a higher accuracy rate (and lower overall error rate) when using 0.5 as our prediction threshold rather than 0.2. 
+
+#### Question 3 - only try this if your computer is fast or you have lots of time!
+Find the LOOCV error for a 0.5 threshold. How much longer does LOOCV take to run compared to the 5-fold error? How similar or different are the error values.
+
+#### *Answer:*
+Here is the unevaluated code for this answer. It takes too long to run to include this in the knitted doc (though you can "cache" chunk results for faster evaluation the second time you knit a doc. You can see this chunk options in this markdown file.) Just for reference, the LOOCV took about 23 minutes on my desktop! The value I obtained for the LOOCV error is about 0.07. Obviously it is close to the 5-fold results so it is not worth all the time spent running the n-fold (LOO) algorithm. 
+
+```{r answerQ3, cache=TRUE, eval=FALSE}
+cost <- function(y, pi) 1-mean(y==(pi>0.5))
+outL5 <- cv.glm(spam, myglm, cost)
+outL5$delta[1]
+```
+
+### 2. Fit  smaller model
+Let's work with a smaller model for a while. Fit a `glm` just using the three capital run length variables. Fit this model.
+
+#### Question 4
+What is the 5-fold CV error for this smaller model? How does it compare the the error for the bigger model?
+```{r answerQ4}
+xvars2 <- str_c(names(spam)[55:57], collapse="+")
+myform2 <- as.formula(str_c("spam ~ ", xvars2))
+myform2
+myglm2 <- glm(myform2, data= spam, family="binomial")
+summary(myglm2)
+cost <- function(y, pi) 1-mean(y==(pi>0.5))
+out5s <- cv.glm(spam, myglm2, K=5, cost)
+out5s$delta[1]
+cost <- function(y, pi) 1-mean(y==(pi>0.5))
+out2s <- cv.glm(spam, myglm2, K=5, cost)
+out2s$delta[1]
+```
+For the smaller model, the error rates are now much higher for both thresholds. A threshold of 0.5 gives a CV error of about `r round(out5s$delta[1],2)` while dropping the threshold to 0.2 increases the error to about `r round(out2s$delta[1],2)`.  Only including these three variables has increased the error rates (and decreased accuracy) by factors of about 3-4, so obviously the bigger model is better! But to keep computing time down, we will stick wiht the smaller model for the next sections. 
+
+### 3. Doing 2-fold CV using the `ROCR` package
+The dataset contains random group assignments that we can use for validation. 
+```{r}
+table(spam$rgroup)
+```
+
+Here is one way to use these random group assignments to do 2-fold cross validation. First we create a matrix with columns indicating whether a case is in the fold (group) of interest:
+```{r}
+train_index <- cbind(spam$rgroup %in% 0:49, spam$rgroup %in% (0:49+50))
+head(train_index)
+```
+Column 1 `TRUE`s indicate that the row is in the first fold training set while a `FALSE` indicates that it is in the first fold test set. Similar for column 2. 
+
+Now we will use an `lapply` command to get the probabilities for the two training sets
+```{r}
+probs_train <- lapply(1:2, 
+                      FUN= function(x){ 
+                    predict(glm(myform2,spam[train_index[,x],],family="binomial"), type="response")
+                        } )
+str(probs_train)
+```
+
+We can use another `lapply` command to get a logical vector of responses for the two training sets. We then put the list of two probability vectors and list of two response vectors into the `prediction` command and then use `performance` to get the CV error computed for a range of threshold (cutoff) values. 
+```{r}
+y_train <- lapply(1:2, 
+                  FUN=function(x){
+                    spam$spam[train_index[,x]] == "spam"
+                    } )
+pred_obj_train <- prediction(probs_train, y_train)
+perf_obj_train <- performance(pred_obj_train, "err")
+str(perf_obj_train)
+```
+We can plot the performance object based on the two training set error rates.
+```{r}
+plot(perf_obj_train)
+```
+
+#### Question 5 
+Repeat the work above for the test set. Remember that you need to use the training data to fit the model but the test data to compute probabilities. 
+
+#### *Answer:*
+We will use the formula for `glm2` that was created previously. The only thing we need to change to get the probabilities for the test data is to add `newdata=` to specificy the test data for each interation of the cross-validation process. We can do this by fitting the model to `spam[train_index[,x],]` (training) data but prediction for `spam[!train_index[,x],]` (test) data for each column of `train_index` given by `x=1:2`. 
+```{r answerQ5a}
+probs_test <- lapply(1:2, 
+                     FUN= function(x){ 
+                    predict(glm(myform2,spam[train_index[,x],],family="binomial"), 
+                            newdata=spam[!train_index[,x],], type="response")
+                       } )
+str(probs_test)
+```
+We then create a list of logical vectors for the test data's responses, then plug the probs and ys into the `prediction` and `performance` functions. 
+```{r answerQ5b}
+y_test <- lapply(1:2, 
+                 FUN=function(x){
+                   spam$spam[!train_index[,x]] == "spam"
+                   })
+pred_obj_test <- prediction(probs_test, y_test)
+perf_obj_test <- performance(pred_obj_test, "err")
+str(perf_obj_test)
+plot(perf_obj_test)
+```
+
+
+### 4. Making performance lists into data frames
+To do any analysis of the performance results we need to take the lists and create data frames. Here is a function that can do that for the error performance objects that you should have for the test and training sets. 
+```{r}
+clean_up_err <- function(perf)
+{ ns <- sapply(1:2, function(x){length(perf@x.values[[x]])})
+  fold <- unlist(lapply(1:2, function(x){rep(x,ns[x])}))
+  threshold <- unlist(perf@x.values)
+  error <- unlist(perf@y.values)
+  return(data_frame(threshold = threshold, error=error, fold = as.character(fold)) )
+}
+train_df <- clean_up_err(perf_obj_train)
+train_df
+train_df <- train_df %>% mutate(name = "train")
+ggplot(train_df, aes(x=threshold, y=error, color=fold)) + geom_line()
+```
+
+#### Question 6 
+Repeat the work above for the test set so you have  training and test set data frames. Then bind these data frames together and create one ggplot showing the four error lines for each combination of fold and type of data (test vs. train). Comment on any similarities or differents between the type and fold. 
+
+#### *Answer:*
+We just need to take the performace data from the test sets and plug it into the cleanup function. We also want to add a `name` variable to the data with entries called `test`. This will give us the ability to distinguish between training and testing data once we bind the two data frames together. 
+```{r answerQ6a}
+test_df <- clean_up_err(perf_obj_test)
+test_df <- test_df %>% mutate(name = "test")
+test_df
+```
+All columns of `test_df` and `train_df` so we can just bind together the rows of the two data frames. Then we can plot threshold values vs. error rates and code lines by color and fold:
+```{r answerQ6b}
+both_df <- bind_rows(test_df, train_df)
+both_df
+ggplot(both_df, aes(x=threshold, y=error, color=fold)) +
+  geom_line(aes(linetype=name)) + 
+  ggtitle("Error rates for individual training and test sets (2-fold CV)")
+```
+
+First let's just verify that the results we see here agree with results we saw earlier for this smaller model. In question 4 we found that the test set error rate for 5-fold CV was about `r round(out5s$delta[1],2)` when using a threshold of 0.5. This number represents the average of the 5 individual testing set error rates. The plot above shows the actual error rates for the two different test sets we get with 2-fold CV. At a threshold of 0.5, the solid lines (test) around both around 0.26-0.27 range.The "average" of these two curves around a 0.5 threshold agrees with the error  we obtained for 5-fold CV using the `cv.glm` command. 
+
+Next we can see similar characteristics to the error curves for the same fold of data, regardless of whether it was used as a test set or training set (e.g. fold 2 usually has lower error rates than fold 1). For both folds, the test error is usually (but not always) above the training error. 
