@@ -228,7 +228,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
          - solutions: [.Rmd](activities/solutions/day14_LogisticRegressionActivity_Solution.Rmd) [.md](activities/solutions/day14_LogisticRegressionActivity_Solution.md)
 
 ------------------------------------------------------------------------
-### <a name="currentweek"></a>Week 10 (10/30)       
+### Week 10 (10/30)       
 
 **Monday** (Cross Validation)
 -   before class:
@@ -244,7 +244,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
   - No class: Professor going to conference to present research
 
 ------------------------------------------------------------------------
-### Week 11 (11/06)
+### <a name="currentweek"></a>Week 11 (11/06)
 
 **Monday** (Decision Trees)
 
