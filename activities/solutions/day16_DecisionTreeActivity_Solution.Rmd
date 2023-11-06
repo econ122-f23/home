@@ -1,0 +1,141 @@
+---
+title: "Decision Trees" 
+author: "ECON 122"
+date: "Day 16"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE, fig.width = 9, fig.height = 4)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr","rpart","partykit","NHANES")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+
+### Diabetes Example:
+Let's take a look at the diabetes example from textbook section 8.5. Here we data frm the NHANES study, and only want to consider complete cases using the variables: `Gender, Diabetes, Age, BMI, PhysActive, HHIncome`. 
+```{r}
+table(NHANES$Gender, NHANES$Diabetes)
+NHANES %>% group_by(Gender, Diabetes) %>% count()
+diabetes <- NHANES %>% select(Gender, Diabetes, Age, BMI, PhysActive, HHIncome) %>% na.omit()
+diabetes
+diabetes %>% group_by(Gender, Diabetes) %>% count() %>% group_by(Gender) %>% mutate(propByGender = n/sum(n))
+prop.table(table(diabetes$Gender, diabetes$Diabetes),1)
+```
+There are 7,555 complete cases (rows) with these variables. Of the females in this group, about 8.3% have diabetes while about 9.8% of males do. 
+
+#### Question 1
+Fit a decision tree just using the variables `Gender` and `Age`. What tree does it produce? What are your error and accuracy rates?
+
+#### *Answer:* 
+Well, the default parameter settings that control splitting (or not) decided that there is only one node in the tree. The variables `Age` and `Gender` by themselves don't add enough information about `Diabetes` to make any splits that make subgroups that are "more pure" (based on the 1% criteria) than the parent node group (which is the entire sample). Using "majority" rules, the entire sample (first node) would be predicted to not have diabetes since over 90% of this node is not diabetic. The confusion matrix then looks like:
+
+ result: | predicted No Diabetes | predicted Diabetes 
+----|------|-----
+actual No Diabetes | 6871 | 0 
+actual Diabetes | 684 | 0 
+
+The accuracy rate is `r round(100*(6871/7555),1)`% (6871/7555) and the error rate is `r round(100*(684/7555),1)`% (684/7555)
+
+```{r answer Q1}
+diab_rpart <- rpart(Diabetes ~ Gender + Age, data=diabetes)
+diab_rpart
+summary(diab_rpart)
+```
+
+#### Question 2
+The default control parameter for the `rpart` splitting algorithm is 1% (`cp=0.01`). This means that a split will occur from a parent node if the overall purity of the children is at least 1% better than the parent. Do you have to *increase* or *decrease* this value to make your tree bigger (i.e. more splits)? Play around with this value to try to get your tree from question 1 to split. Here is the argument to add to the `rpart` command: `control=rpart.control(cp=.01)`. Change the 0.01 value to something higher or lower from this default setting. 
+
+#### *Answer:* 
+To make the tree bigger you have to allow more nodes to split. The `cp` setting needs to be lowered to make this happen, since that allows us to split a node if there is a smaller than 1% increase in purity. E.g. if we use 0.0001 for `cp` then we are saying that purity of the child nodes only needs to be 0.01% better than their parent node. Here we change the parameter to 0.01% and get a tree with 15 nodes, 8 of which are terminal (i.e. no branches off of terminal nodes). 
+```{r answerQ2}
+diab_rpart <- rpart(Diabetes ~ Gender + Age, data=diabetes, control=rpart.control(cp=.0001))
+diab_rpart
+plot(as.party(diab_rpart),gp = gpar(fontsize = 8))
+```
+
+#### Question 3
+The book authors fit the model below to all variables except income:
+
+```{r}
+diab_rpart <- rpart(Diabetes ~ Gender + Age + BMI + PhysActive, data=diabetes, control=rpart.control(cp=.005, minbucket = 30))
+diab_rpart
+plot(as.party(diab_rpart))
+```
+
+What happens if you omit the `minbucket` part of the control argument? What does including this option do to your tree?
+
+#### *Answer:* 
+`minbucket` controls the final sample size in each terminal node (partition). Setting that parameter equal to 30 ensures that all subset sizes are 30 or more. If we relax this then we could potentially allow a split of a node into children nodes that are less than 30 cases in size. When we take away this restriction, our tree grows in size for this example:
+```{r answerQ3}
+diab_rpart <- rpart(Diabetes ~ Gender + Age + BMI + PhysActive, data=diabetes, control=rpart.control(cp=.005))
+diab_rpart
+plot(as.party(diab_rpart),gp = gpar(fontsize = 8))
+```
+
+#### Question 4
+Fit the model from question 3 without the `minbucket` option to a training dataset composed of just 2009-10 survey responses. Then use this model to predict diabetes cases for the 2011-2012 survey. What are your `test` and `training` `error` and `accuracy` rates? `Precision` and `recall`?
+
+#### *Answer:*
+We first need to go back and add `SurveyYr` to the diabetes data frame we created without NAs:
+```{r}
+diabetes <- NHANES %>% select(SurveyYr, Gender, Diabetes, Age, BMI, PhysActive, HHIncome) %>% na.omit()
+```
+
+Then we can create the training and testing datasets:
+```{r}
+diabetes_train <- filter(diabetes, SurveyYr == "2009_10")
+diabetes_test <- filter(diabetes, SurveyYr == "2011_12")
+```
+Then fit the decision tree from question 3 to the training set:
+```{r}
+diab_rpart <- rpart(Diabetes ~ Gender + Age + BMI + PhysActive, data=diabetes_train, control=rpart.control(cp=.005))
+diab_rpart
+```
+We can use the `predict` command to get the decision tree classifications for each case in the training dataset (to be used to get the confusion matrix):
+```{r}
+diabetes_train <- diabetes_train %>% mutate(pred_dtree = predict(diab_rpart, type="class"))
+conf_mat <- with(diabetes_train,table(Diabetes, pred_dtree))
+conf_mat
+sum(diag(conf_mat))/sum(conf_mat)
+prop.table(conf_mat, 1)
+prop.table(conf_mat, 2)
+```
+The accuracy of this model on the test data is `r round(sum(diag(conf_mat))/sum(conf_mat)*100,1)`% with a precision of  `r round(prop.table(conf_mat, 2)[2,2]*100,1)`%, and recall of  `r round(prop.table(conf_mat, 1)[2,2]*100,1)`%. 
+
+Next, we just repeat the predictions using the test data (`newdata=diabetes_test `)and recompute the confusion matrix:
+```{r}
+diabetes_test <- diabetes_test %>% mutate(pred_dtree = predict(diab_rpart,newdata=diabetes_test, type="class"))
+conf_mat <- with(diabetes_test,table(Diabetes, pred_dtree))
+conf_mat
+sum(diag(conf_mat))/sum(conf_mat)
+prop.table(conf_mat, 1)
+prop.table(conf_mat, 2)
+```
+The accuracy of this model on the test data is `r round(sum(diag(conf_mat))/sum(conf_mat)*100,1)`% with a precision of  `r round(prop.table(conf_mat, 2)[2,2]*100,1)`%, and recall of  `r round(prop.table(conf_mat, 1)[2,2]*100,1)`%. 
+
+We could use some `dplyr` commands to create a data frame to compare stats:
+
+```{r}
+diabetes_test <- diabetes_test %>% mutate(name="test")
+diabetes_train <- diabetes_train %>% mutate(name="train")
+diabetes_both <- bind_rows(diabetes_train, diabetes_test)
+rates <- diabetes_both  %>% group_by(name) %>%
+  summarize(N=n(),
+            accuracy = sum(Diabetes == pred_dtree)/N, 
+            N_Defaults = sum(Diabetes == "Yes"),
+            true_Default = sum(Diabetes == pred_dtree & Diabetes == "Yes"), 
+            true_noDefault = sum(Diabetes == pred_dtree & Diabetes == "No"), 
+            precision = true_Default/sum(pred_dtree == "Yes"),
+            recall = true_Default/N_Defaults, 
+            ) %>%
+  select(- N_Defaults, - true_Default, - true_noDefault)
+rates
+```
+
