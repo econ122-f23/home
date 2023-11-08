@@ -105,6 +105,11 @@ We can use the `scale` function on a data frame to standardize each
 column of the test and training sets. Verify that the sd of the scaled
 training and test sets are now all equal to 1.
 
+``` r
+> trainX <- scale(trainX)
+> testX <- scale(testX)
+```
+
 #### *Answer:*
 
 The min and max of both sets are equal to 1.
@@ -293,7 +298,7 @@ node), split, n, loss, yval, (yprob)
 
 For a decision tree: the accuracy for predicting the test set is 88.2%,
 the error rate is 11.8%, and the recall detecting spam is 82.1%. Some of
-the important predictors look to be the frequency of \$ (more \$ signs
+the important predictors look to be the frequency of $ (more $ signs
 means more spam), ! (bang) (fewer ! means less spam), the frequency of
 the word remove (more instances means more spam), and the frequency of
 the word free (more free means more spam).
@@ -302,7 +307,7 @@ the word free (more free means more spam).
 
 Fit a random forest model to the spam data using the `randomForest`
 command. Use the default settings (with produce 500 trees with
-![m \approx \sqrt{p}](https://latex.codecogs.com/png.latex?m%20%5Capprox%20%5Csqrt%7Bp%7D "m \approx \sqrt{p}")).
+![m \\approx \\sqrt{p}](https://latex.codecogs.com/png.latex?m%20%5Capprox%20%5Csqrt%7Bp%7D "m \approx \sqrt{p}")).
 Compute the accuracy, error and recall for the test data. What
 predictors look to be the important predictors of spam based on this
 method? Are they similar to the variable found in question 6?

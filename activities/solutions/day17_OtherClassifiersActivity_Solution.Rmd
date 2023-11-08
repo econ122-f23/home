@@ -68,7 +68,7 @@ tail(sds)
 
 #### Question 3
 We can use the `scale` function on a data frame to standardize each column of the test and training sets. Verify that the sd of the scaled training and test sets are now all equal to 1. 
-```{r, include=FALSE}
+```{r, include=TRUE}
 trainX <- scale(trainX)
 testX <- scale(testX)
 ```
