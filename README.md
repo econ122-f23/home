@@ -37,6 +37,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
 - [Problem Set 4](https://classroom.github.com/a/wjWMNFm6) (due **10/09**)
   - Solutions [.Rmd](PS/PS4-solution.Rmd) [.md](PS/PS4-solution.md)
 - [Problem Set 5](https://classroom.github.com/a/hKb4xybW) (due **11/10**)
+  - Solutions [.Rmd](PS/PS5-solution.Rmd) [.md](PS/PS5-solution.md)
 - [Team Project 2](https://classroom.github.com/a/I0xMnmkh) (due **11/20**) [[Description]](https://github.com/econ122-f23/teamproject2)
 - [Problem Set 6](https://classroom.github.com/a/AmBx7PPT) (due **11/27**)
 - [Final Project]() (due **12/15**) [[Description]](FinalProject.md)
@@ -244,7 +245,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
   - No class: Professor going to conference to present research
 
 ------------------------------------------------------------------------
-### <a name="currentweek"></a>Week 11 (11/06)
+### Week 11 (11/06)
 
 **Monday** (Decision Trees)
 
@@ -268,7 +269,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
         - solutions: [.Rmd](activities/solutions/day17_OtherClassifiersActivity_Solution.Rmd) [.md](activities/solutions/day17_OtherClassifiersActivity_Solution.md)
 
 ------------------------------------------------------------------------
-### Week 12 (11/13)
+### <a name="currentweek"></a>Week 12 (11/13)
 
 **Monday** (k-means clustering)
 -   before class:

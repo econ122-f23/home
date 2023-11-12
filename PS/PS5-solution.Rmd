@@ -1,0 +1,271 @@
+---
+title: "PS5 - solution"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE, fig.height = 4, fig.width = 7)
+```
+
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr","tidyr","stringr","readr", "rvest","ROCR","NHANES","boot", "nasaweather","rpart","partykit")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+Package versions
+```{r}
+mypacks
+lapply(mypacks, packageVersion)
+```
+
+
+### Problem 1
+Consider the `NHANES` data (from the same-named package). See the help file for this data for more info. 
+
+Now suppose you are working for Target as a data scientist and you are tasked with predicting which customers are pregnant based mainly on demographic and physical patterns observed in the publicly available NHANES data. (A real data scientist for Target would also have buying profiles!) For this problem you want to predict `PregnantNow` using the characteristics: `Age`, `Education`, `HHIncomeMid`,  `MaritalStatus`, `Bmi`, and `Height`.
+
+Preliminary steps: Recode `PregnantNow` to have two levels (yes, no) and make the `unknown` level NAs. Recode `MaritalStatus` to just be `married` or `notmarried`. Finally, create a subset of the data for females that only contains complete cases (i.e. no NAs) for the variables described above that you will use in this problem. **Use `NHANESf` in to answer the questions below!**
+```{r, eval=TRUE}
+glimpse(NHANES)
+NHANES <- NHANES %>% 
+  mutate(
+    pregnant = recode_factor(PregnantNow, No = "No", Yes = "Yes",Unknown = NA_character_), 
+    married = recode_factor(MaritalStatus, Married = "married", .default="notmarried")) 
+NHANESf <- NHANES %>% 
+  filter(Gender == "female") %>% 
+  select(pregnant,Age,  Education , BMI, HHIncomeMid, married ,Height, SurveyYr) %>% 
+  na.omit()
+```
+
+**1.**  Using `NHANESf` data, fit a logistic model to model pregnancies using the set of specified explanatory variables. Draw the ROC curve and double density curves for your model. Describe what these graphs tell us about our model.
+
+```{r}
+glm.model<-glm(pregnant~Age+Education+BMI+HHIncomeMid+married+Height+SurveyYr,data=NHANESf,family="binomial")
+glm.model
+```
+
+c. Draw the ROC curve and double density curves for your model. Describe what these graphs tell us about our model.
+
+#### *Answer:*
+First get the glm, then extract the probabilies:
+```{r}
+pglm <- glm(pregnant ~ Age +  Education + BMI + HHIncomeMid + married + Height, family = "binomial",data=NHANESf)
+NHANESf <- NHANESf %>% 
+  mutate(pred_probs = predict(pglm, type="response"))
+```
+The ROC curve shows the true positive and false positive rates for the model at a variety of threshold values. This shows that there are some threshold levels (not 0.5) that will lead to higher sensitivity (true positive) than just random guessing (the straight line). Without looking at ROC curves for other models, though, it is hard to really judge how good this model is just based on the ROC curve.
+```{r}
+pred_obj <- prediction(NHANESf$pred_probs,NHANESf$pregnant, label.ordering = c("No","Yes"))
+perf_obj <- performance(pred_obj, "tpr","fpr")
+plot(perf_obj); abline(0,1)
+```
+
+The double density curves show that most non-pregnant women have estimated pregnancy probabilities below 10%. The probabilities for the pregnant women are not so well defined but do range higher than the probabilities for non-pregnant woman. 
+```{r}
+ggplot(NHANESf, aes(x=pred_probs, color=pregnant))  + 
+  geom_density(size=1.5) + 
+  ggtitle("Pregnancy probability estimates by actual status")
+```
+
+
+**2.** Use a threshold of 0.5 to predict pregnancies. Compute the confusion matrix, accuracy, sensitivity and specificity. Then repeat these calculations using a threshold of 0.05. 
+
+#### *Answer:*
+```{r}
+NHANESf <- NHANESf %>% 
+  mutate(preds50 = ifelse(pred_probs >=.50,"Yes","No"), 
+         preds5 = ifelse(pred_probs >=.05,"Yes","No"))
+```
+The compute the confusion matrix for these predictions:
+```{r}
+with(NHANESf,table(pregnant, preds50))
+with(NHANESf,table(pregnant, preds5))
+stats <- NHANESf %>% gather(key=threshold, value=preds, preds50:preds5) %>%
+  group_by(threshold) %>%
+  summarize(accuracy = mean(preds == pregnant), 
+            precision = sum(preds == "Yes" & pregnant == "Yes")/sum(preds == "Yes"),
+            recall = sum(preds == "Yes" & pregnant == "Yes")/sum(pregnant == "Yes") 
+            )
+stats
+```
+With a threshold of 0.50, we are not predicting any pregnancies in this data! Note that the largest pregnancy probability is about 26%:
+```{r}
+summary(NHANESf$pred_probs)
+```
+For a 50% threshold: the accuracy rate is then the rate of no pregnancies in the data, `r round(stats[2,"accuracy"]*100,1)`%, the precision rate is NA because we don't predict any pregnancies and the recall rate is `r round(stats[2,"recall"]*100,1)`% (none of the pregnancies were predicted).
+
+For a 5% threshold: the accuracy rate is `r round(stats[1,"accuracy"]*100,1)`%, the precision rate is `r round(stats[1,"precision"]*100,1)`%  and the recall rate is `r round(stats[1,"recall"]*100,1)`%.
+
+
+**3.** Which threshold would you use (0.5 or 0.05) if your job depended on you correctly identifying women who were pregnant at a high rate? What if your job depended on correctly identifying as many individuals as possible? Explain your rational when answering these questions.
+
+#### *Answer:*
+If you wanted to identify women who are actually pregnant at a high rate you will want a high level of `recall`, so using a lower threshold (0.05) is better since you will have a higher rate of IDing these women. 
+
+If you wanted to correctly identify as many indivduals as possible, you want a high level of `accuracy`. Therefore you should choose the threshold of 0.5 which predicts that nobody is pregnant. While this seems like a bad model, it will lead to high accuracy since the actual probability of being pregnant is so low in the data.
+
+
+### Problem 2
+Consider the model you fit in  problem 1. 
+
+**1.** Refit your model in part a of problem 1 using the 2009-10 `SurveyYr` as the training data set and the 2011-12 year as the test set. Using a 0.05 theshold, compute the accuracy, precision and recall of the predictions from both the training and test sets.
+
+#### *Answer:* 
+Fit the model on the training data set: 
+```{r}
+NHANESf %>% group_by(SurveyYr) %>% count()
+train <- NHANESf %>% filter(SurveyYr == "2009_10")
+test <- NHANESf %>% filter(SurveyYr == "2011_12")
+pglm <- glm(pregnant ~ Age +  Education + BMI + HHIncomeMid + married + Height, family = "binomial",data=train)
+```
+Then compute test set probs, predictions and stats:
+```{r}
+pred_probs_test <- predict(pglm, newdata =test, type="response")
+test <- test %>% 
+  mutate( 
+    preds = ifelse(pred_probs_test >=.05,"Yes","No"), 
+    probs = pred_probs_test, 
+    type = "test")
+```
+Then training set values:
+```{r}
+pred_probs_train <- predict(pglm,type="response")
+train <- train %>% 
+  mutate( 
+    preds = ifelse(pred_probs_train >=.05,"Yes","No"), 
+    probs = pred_probs_train, 
+    type = "train")
+```
+Join together in one data set (columns are the same) with a row bind
+```{r}
+all <- bind_rows(test,train)
+stats <- all %>% group_by(type) %>%
+    summarize(accuracy = mean(pregnant == preds),
+              precision = sum(pregnant == "Yes" & 
+                     preds == "Yes")/sum(preds == "Yes"),
+            recall = sum(pregnant == "Yes" & 
+                     preds == "Yes")/sum(pregnant == "Yes")
+            )
+stats
+```
+
+- For the test set: accuracy is `r round(stats[1,"accuracy"]*100,1)`%, precision is `r round(stats[1,"precision"]*100,1)`%, and recall is `r round(stats[1,"recall"]*100,1)`%.
+- For the training set: accuracy is `r round(stats[2,"accuracy"]*100,1)`%, precision is `r round(stats[2,"precision"]*100,1)`%, and recall is `r round(stats[2,"recall"]*100,1)`%.
+
+
+**2.** Draw ROC curves for both the training and test sets. Compare the curves and comment on how well your 2009-10 model can predict 2011-12 pregnancies.
+
+#### *Answer:* 
+The curves are similar, possibly suggesting that the second year of data has similar pregnancy patterns as the first year of data. The curve starts to flatten out around a false positive rate of 75% so after this point we see bigger increases in false positive rates for smaller gains in sensitivity. 
+
+```{r}
+roc_fn <- function(data)
+{ 
+  preds_obj <- prediction(data$probs, data$pregnant, c("No","Yes"))
+  perf_obj <- performance(preds_obj, "tpr","fpr")
+  perf_df <- data_frame(fpr=unlist(perf_obj@x.values), tpr= unlist(perf_obj@y.values), 
+                        threshold=unlist(perf_obj@alpha.values))
+  return(perf_df)
+}
+perf_df <- all %>%
+   group_by(type) %>%
+  do(roc_fn(.))
+perf_df
+```
+
+```{r}
+ggplot(perf_df, aes(x=fpr, y=tpr, color=type)) + 
+  geom_line(size=1.5) + 
+  labs(x="false positive rate", y="true positive rate", title="ROC curves") + 
+  geom_abline(slope=1,intercept=0, linetype=3) 
+```
+
+### Problem 3
+Consider the model you fit in problem 1. 
+
+**1.** Use the `cv.glm` command to get the cross-validation error estimate using 5-fold CV with a threshold of 0.5. Use this error to estimate the accuracy of the model and compare this to your answer problem 2 part 2.
+
+#### *Answer:* 
+The cv error for the logistic model is about 4% using a threshold of 0.50, meaning the accuracy is about 96% which is very close to what was obtained on the full data set without cross validation.
+
+```{r}
+pglm <- glm(pregnant ~ Age +  Education + BMI + HHIncomeMid + married + Height, family = "binomial",data=NHANESf)
+set.seed(5)
+cost <- function(y, pi) mean(abs(y-pi) >= .5)
+cv.glm(NHANESf, pglm, K=5, cost)$delta[1]
+```
+
+**2.** Use the `cv.glm` command to get the cross-validation error estimate using 5-fold CV with a threshold of 0.05. Use this error to estimate the accuracy of the model and compare this to your answer problem 2 part 2.
+
+#### *Answer:* 
+The cv error for the logistic model is about 30% using a threshold of 0.50, meaning the accuracy is about 70% which is again very close to what was obtained on the full data set without cross validation.
+
+```{r}
+cost <- function(y, pi) mean(abs(y-pi) >= .05)
+cv.glm(NHANESf, pglm, K=5, cost)$delta[1]
+```
+
+### Problem 4
+Take a look at textbook exercise 8.5. For parts 1-2 below, we will use the response `y_td` as our response to make a classifier for **tropical depressions**:
+
+```{r, eval=TRUE}
+table(storms$type)
+storms <- storms %>% 
+  mutate(y_td = recode_factor(type, .default="other", `Tropical Depression`="Tropical Depression"))
+table(storms$type, storms$y_td)
+storms$y_td <- factor(storms$y_td, levels=c("other","Tropical Depression") )
+levels(storms$y_td)
+```
+
+**1.** Create a decision tree to classify a storm as a tropical depression (or not) using `wind` and `pressure` as your predictors. Draw a tree diagram of the model and describe what wind speed and pressure characteristics can be used to identify a tropical depression. (Note: use the default control parameters for `rpart`.)
+
+#### *Answer:* 
+```{r, fig.height=5, fig.width=9}
+form <- as.formula(y_td ~ pressure + wind)
+td_dtree <- rpart(form, data=storms)
+td_dtree
+```
+If wind speed is greater than or equal to 32.5mph then the storm is not predicted to be a TD (with 100% precision). For storms with wind speeds less than 32.5, it will be predicted to be a TD (with `r round(100*(40+63)/(141+576),1)`% precision error) unless it has winds less than 22.5mph and pressure  less than 1012.5 (with 40%  error).
+```{r}
+plot(as.party(td_dtree),type="simple",gp = gpar(fontsize = 10))
+```
+
+**2.** Visualize your model in part 1 in the predictor space. Your figure should look similar to either figure 8.10 or the loan default duration/credit plots. (Note: use `geom_jitter` rather than `geom_point` to account for overplotting)
+
+
+#### *Answer:* 
+```{r, fig.height=5, fig.width=9}
+ggplot(storms, aes(x=pressure, y=wind, color=y_td)) + 
+  geom_jitter() + 
+  geom_hline(yintercept = c(32.5)) + 
+  geom_segment(x=1012.5,xend=1012.5, y=0,yend=22.5, color="black") + 
+  geom_segment(x=1012.5,xend=Inf, y=22.5,yend=22.5, color="black") + 
+  annotate("rect",ymin=22.5,ymax=32.5,xmin=-Inf,xmax=Inf, fill="lightblue",alpha=.4) + 
+  annotate("rect",ymin=0,ymax=22.5,xmin=-Inf,xmax=1012.5, fill="lightblue",alpha=.4)
+```
+
+
+**3.** Create one decision tree to classify *all four* types of storms! Use `type` as your response and `wind` and `pressure` as your predictors. Draw a tree diagram of the model.   Is it easy to distinguish between storms using these two measures? Which measure, wind speed or pressure, seems most important when classifying storm types? (Note: use the default control parameters for `rpart`.)
+
+#### *Answer:* 
+The tree is relatively simple, with wind speed the being the primary factor. 
+```{r, fig.height=5, fig.width=10}
+storms_dtree <- rpart(type ~ pressure + wind, data=storms)
+storms_dtree
+plot(as.party(storms_dtree),type="simple")
+```
+
+**4.** Compute the accuracy of your model from part 3. Describe intuitively what accuracy measures and how you can classify these four types of storms using their wind speed and pressure characteristics.
+
+#### *Answer:* 
+This model can correctly predict about 86% of storms in the data. Wind speeds greater than 62.5mph are classified as Hurricanes, storms less than 32.5mph are tropical depressions, storms between 32.5 and 62.5mph are extratropical if pressure is below 985.5, otherwise they are tropical storms. 
+
+```{r}
+storms <- storms %>% mutate(preds = predict(storms_dtree, type="class"))
+table(storms$type, storms$preds)
+storms %>% summarize(accuracy = mean(preds == type))
+```
