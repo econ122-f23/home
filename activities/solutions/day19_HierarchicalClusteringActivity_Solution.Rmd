@@ -1,0 +1,145 @@
+---
+title: "Hierarchical Clustering Activity" 
+author: "ECON 122"
+date: "Day 19"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE, fig.width = 9, fig.height = 6)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr","readr","tidyr","sparcl","GGally")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+
+## Clustering on incoming student characteristics
+We will again look at the "classic" college data set of a random sample of colleges and universities. This time we will look at CA **AND** MA schools
+
+```{r}
+colleges <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/Colleges.csv")
+names(colleges)
+colleges2 <- colleges %>% filter(State %in% c("MA","CA"))
+table(colleges2$State)
+```
+
+We will also focus on the proportion of the incoming class that is in the top 10% or 25% of their HS class.
+```{r}
+coll_vars <- names(colleges2)[c(3,4,7,8)]
+coll_vars
+summary(colleges2[,coll_vars])
+```
+Let's cluster schools by their incoming class characteristics.
+
+#### Question 1
+Why should we standardize the variables of interest before using a clustering method?
+
+**Ans:**
+
+> The size and variability of the variables differs. If we didn't standardize then any method that uses Euclidean distance will favor SAT measures at the expense of the HS measures. 
+
+#### Question 2 
+Standardize our four variables of interest and fit a hierarchical clustering model.
+
+**Ans:**
+Here we fit a hierarchical clustering model to the four variables of interest:
+```{r}
+d <- dist(scale(colleges2[,coll_vars]))
+coll_hc <- hclust(d)
+```
+
+We can then make a basic dendrogram with label names added:
+```{r}
+plot(coll_hc, labels = colleges2$College)
+```
+
+#### Question 3:
+Which school seems most similar to University of San Francisco? Compare the SAT and HS class variable values to verify your answer
+
+**Ans:**
+
+> Chapman University is the first school it would be fused with if we cut the tree at a low height. These schools have identical HS values and very similar SAT values (within 15 points).
+```{r answerQ2}
+colleges2 %>% filter(College %in% c("Chapman University","University of San Francisco"))
+```
+
+#### Question 4:
+What height would you have to cut this tree to create 3 clusters? Use the `abline(h=)` function to add a cut line to the previous plot.
+
+**Ans:**
+
+> A height (dissimilarity measure) of about 4 would lead to  three clusters. 
+
+```{r answerQ3}
+plot(coll_hc, labels = colleges2$College)
+abline(h=4, lty=2)
+```
+
+#### Question 5 
+Make 3 clusters and add them as characters to the data frame. Plot a dendogram that identifies each cluster with a different color.
+
+**Ans:**
+
+>We can cut the tree into k clusters using `cutree`. Here we make 3 clusters and add them as characters to the data frame:
+
+```{r}
+hc_clusters <- cutree(coll_hc, k=3)
+colleges2 <- colleges2 %>%
+  mutate(cluster_hc3 = as.character(hc_clusters))
+```
+
+> We can add cluster colors to the dendrogram using the `ColorDendrogram` function in the `sparcl` package. 
+
+```{r}
+ColorDendrogram(coll_hc, y=colleges2$cluster_hc3, labels=colleges2$College, branchlength = 1.6)
+```
+
+#### Question 6
+What are the characteristics of each cluster? Use either `density curves` or `boxplots` for the `SAT` and `HS` variables. How would you label the clusters in a way the general public would understand? 
+
+**Ans:**
+
+```{r}
+colleges2 %>% 
+  select(cluster_hc3, SATM,SATV,HStop10,HStop25) %>%
+  gather(key=variable, value=value, SATM:HStop25) %>%
+  ggplot(aes(x=value, color=cluster_hc3)) + geom_density() + facet_wrap(~variable, scales="free") 
+```
+
+```{r answerQ5}
+colleges2 %>% 
+  select(cluster_hc3, SATM,SATV,HStop10,HStop25) %>%
+  gather(key=variable, value=value, SATM:HStop25) %>%
+  ggplot(aes(y=value, x=cluster_hc3)) + geom_boxplot() + facet_wrap(~variable, scales="free") 
+colleges2 %>% filter(cluster_hc3 == "1") %>% select(College)
+```
+
+> The cluster numbers don't necessarily correspond to the ranking of the schools in each cluster. One way to label the clusters is by the competitiveness of each school. Cluster 1 tends to to have the highest `SAT` scores as well as the highest proportion of HS students in the `top10` and `top25`. Cluster 3 and 2 have lower scores. The density and boxplots show that the gap between the cluster 1 and cluster 2 and 3 schools is larger than the gap between the cluster 2 and 3 schools. 
+
+#### Question 7
+Do you prefer kmeans or hiearchical clustering? What are the pros and cons? 
+
+
+**Ans:**
+
+Personally I prefer `hiearchical clustering` because the `dendogram` creates a nice structure to visualize the data and we don't have to specify a `k` before hand.
+
+In terms of pros and cons
+
+- Advantages of `kmeans` vs `hiearchical`
+    - If you have a large dataset, `kmeans` is faster 
+    - `kmeans` allows you to easily quantify (using `withinss`) the tradeoff of adding more clusters
+    
+- Advantages of `hiearchical` vs `kmeans`
+    - Provides a nice visualization of the data
+    - No requirement to choose `k` ahead of time
+    - Can customize the algorithm by choosing different ways to calculate distance between leafs
+
+
+
+
