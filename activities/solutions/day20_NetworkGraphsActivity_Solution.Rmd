@@ -1,0 +1,133 @@
+---
+title: "Network Graphs Activity" 
+author: "ECON 122"
+date: "Day 20"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE, fig.width = 9, fig.height = 6)
+```
+
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr","readr","tidyr","statnet","circlize","ggnetwork")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+## Country Migration
+The following dataset contains migration counts for decades between 1960 and 2000 between the origin (`origincode`)and destination (`destcode`) countries given in the data. 
+
+```{r}
+MigrationFlows <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/MigrationFlows.csv")
+MigrationFlows
+```
+
+#### Question 1 
+Create a subsetted version of this data, called `MigrationFlowsF`, that only contains migration counts of `females` `over 1000` in 2000. How many cases are in this dataset?
+
+#### *Answer:*
+We filter according to our criteria, select our origin, destination and migration count variables. 
+```{r}
+MigrationFlowsF <- MigrationFlows %>% 
+  filter(sex == "Female", Y2000>1000) %>% 
+  select(origincode, destcode, Y2000) 
+MigrationFlowsF
+```
+There are 1,437 cases in this dataset.
+
+#### Question 2
+The data frame you created in question 1 can be used as the edge list for a migration network in 2000. Create a `network` object that makes a directional network with edges indicating migration from the origin country to a destination country. How many nodes are in this network? How many edges?
+
+#### *Answer:*
+The data provided in `MigrationFlows` gives us an *edge list* once we filter it to country combos with positive migration counts. To create the network object we need to enter a matrix or data frame with two columns: the first is the origin and the second is the destination. This network has 198 nodes (vertices) and 1437 total (directional) edges.
+
+```{r}
+migration <- network(select(MigrationFlowsF,origincode,destcode), matrix.type="edgelist")
+migration
+```
+
+
+#### Question 3 
+Visualizing all countries at once is likely to be overwhelming. Let's analyze the following countries:
+```{r}
+smallerGroup <- c("USA","CAN","MEX","BRA","CHN","JPN","GBR","PRT")
+```
+Draw a plot of this network with `ggnetwork` and `ggplot` with vertex labels added. What patterns do you see in the plot? 
+
+- **Note:** Because we have arrows going into and out of the same countries, using `curvature=0.2` in `geom_edges` helps better visualize the flows
+- **Note:** Setting a seed `set.seed(x)` can help to keep your network figyre constant each time you run your code
+
+#### *Answer:*
+USA and GBR appear to be pretty central in the network with lots of inflows, while PRT, JPN, and CHN have fewer inflows. 
+
+```{r}
+MigrationFlowsF_small <- filter(MigrationFlowsF,origincode %in% smallerGroup, destcode %in% smallerGroup)
+mynet_small <- network(MigrationFlowsF_small[,1:2], matrix.type="edgelist")
+
+# ggplot option
+set.seed(6)
+ggplot(data = ggnetwork(mynet_small,arrow.gap=.04), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges(arrow=arrow(length=unit(6,"pt"), type="closed"),curvature = 0.20) + 
+  geom_nodes() + 
+  theme_blank() + 
+  geom_nodelabel(aes(label=vertex.names)) 
+```
+
+
+#### Question 4
+Is `Y2000`, migration in 2000, an edge or vertex attribute? Add it to your smaller network from question 3 using the `set.xxxx.attribute(network, "name", values)`. 
+
+#### *Answer:*
+This is an edge attribute since is measures the flow between countries and is not a single value associate with each country (e.g. like GDP would be). Add this attribute using the same edge list order as the original edgelist used to create the network. These values will be mapped correctly to the 32 edges. We can check the edgelist entries to verify the correct mapping of value to edge:
+
+```{r}
+set.edge.attribute(mynet_small, "Y2000", MigrationFlowsF_small$Y2000)
+mynet_small
+
+# check work: node numbering is alphabetical
+as.edgelist(mynet_small,"Y2000")
+```
+
+
+#### Question 5
+Modify your plot from question 3 so that edge width is a function of migration flow size. Use the `size` option in `geom_edges`. What patterns do you notice about migration flows? 
+
+- **Note:** Coloring each edge by country of origin is helpful to visualize the flows better
+
+#### *Answer:*
+The largest flows are into USA from GBR and CAN. CHN has a lot of outflows but not a lot of inflows.
+
+```{r}
+set.seed(6)
+ggplot(data = ggnetwork(mynet_small,arrow.gap=.05), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges(arrow=arrow(length=unit(10,"pt"), type="open"), aes(size=Y2000,color=vertex.names),curvature = 0.20) + 
+  geom_nodes() + 
+  theme_blank() + 
+  geom_nodelabel(aes(label=vertex.names)) 
+```
+
+
+#### Question 6 
+For a given country, imagine we want to focus on where the inflows of migrants are coming from. Create a new `edge attribute` that calculates for each destination country the ratio of inward migration from relative to all inward migration. Do you learn anything different from this Figure relative to Q5?
+
+#### *Answer:*
+Certain trends regarding inflows are easier to see. For example, this Figure makes it clear that most inflows into JPN are coming from CHN and PRT (portugal) and BRA make up the vast majority of migrants in each country respectively.
+
+```{r}
+MigrationFlowsF_small <- MigrationFlowsF_small %>% group_by(destcode) %>%
+  mutate(Y2000_ratio=Y2000/sum(Y2000))
+
+set.edge.attribute(mynet_small, "Y2000_ratio", MigrationFlowsF_small$Y2000_ratio)
+
+set.seed(6)
+ggplot(data = ggnetwork(mynet_small,arrow.gap=.05), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges(arrow=arrow(length=unit(10,"pt")), aes(size=Y2000_ratio,color=vertex.names),curvature = 0.20) + 
+  geom_nodes() + 
+  theme_blank() + 
+  geom_nodelabel(aes(label=vertex.names)) 
+```
+
