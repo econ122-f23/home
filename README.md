@@ -269,7 +269,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
         - solutions: [.Rmd](activities/solutions/day17_OtherClassifiersActivity_Solution.Rmd) [.md](activities/solutions/day17_OtherClassifiersActivity_Solution.md)
 
 ------------------------------------------------------------------------
-### <a name="currentweek"></a>Week 12 (11/13)
+### Week 12 (11/13)
 
 **Monday** (k-means clustering)
 -   before class:
@@ -292,7 +292,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
 
 ------------------------------------------------------------------------
 
-### Week 13 (11/20)
+### <a name="currentweek"></a>Week 13 (11/20)
 
 **Monday** (Networks Intro)
 -   before class:
