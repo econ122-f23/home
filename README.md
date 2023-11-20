@@ -298,7 +298,6 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
 -   before class:
     - Read MDSR section 16.1-16.2 (20.1,20.2)
 -   in class:
-    -   [Final project proposal](FinalProject.md)
     -   [exam 2 explanation](exam2.md)
     -   day 20 slides: [.Rmd](docs/day20_NetworkGraphsSlides.Rmd)  [.html](https://econ122-f22.github.io/home/day20_NetworkGraphsSlides.html)
     -   day 20 activity: [.Rmd](activities/day20_NetworkGraphsActivity.Rmd) [.md](activities/day20_NetworkGraphsActivity.md)
@@ -318,7 +317,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
 -   in class:
     -   [Team Project 2 results](projects/results.csv)
           - [past results](projects/results_2021.csv)
-    -   Discuss `Final Project` proposals
+    -   [Final project proposal](FinalProject.md)
     -   day 21 slides: [.Rmd](docs/day21_NetworkStatsSlides.Rmd)  [.html](https://econ122-f23.github.io/home/day21_NetworkStatsSlides.html)
     -   day 21 activity: [.Rmd](activities/day21_NetworkStatsActivity.Rmd) [.md](activities/day21_NetworkStatsActivity.md)
          - solutions: [.Rmd](activities/solutions/day21_NetworkStatsActivity_Solution.Rmd) [.md](activities/solutions/day21_NetworkStatsActivity_Solution.md)
@@ -339,6 +338,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
     -   read MDSR 16.3 and 16.4 (20.3,20.4)
     -   read [this article](https://www.maa.org/sites/default/files/pdf/Mathhorizons/NetworkofThrones%20%281%29.pdf) on the Game of Thrones network
 -   in class
+    -   Discuss `Final Project` proposals
     -   day 22 slides: [.Rmd](docs/day23_NetworkGoTSlides.Rmd)  [.html](https://econ122-f23.github.io/home/day22_NetworkGoTSlides.html)
     -   day 22 activity: [.Rmd](activities/day22_GoTActivity.Rmd) [.md](activities/day22_GoTActivity.md)
            - solutions: [.Rmd](activities/solutions/day22_GoTActivity_Solution.Rmd) [.md](activities/solutions/day22_GoTActivity_Solution.md)

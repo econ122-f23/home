@@ -4,7 +4,7 @@ Teams: 2-4 students per team
 
 ### Deadlines: 
 
-- Proposals ready to be explained during class on **11/27** (*5 points* deduction for late proposal)
+- Proposals ready to be explained during class on **12/04** (*5 points* deduction for late proposal)
 - Project pushed to GitHub repository by 11:59pm, Fri. **12/15**
     - I've created an empty repository for you so set it up as you wish
 
