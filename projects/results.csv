@@ -1,0 +1,12 @@
+group,accuracy,Method
+Beltran_Chang_Costa_Torrey,0.947,"RF, optimal vars using grid search"
+Amin_Lee,0.9406,"RF, 11 vars, ntree=200, mtry=7"
+Azmera_Baral_Duong_Mendoza,0.9406,"RF, all vars, ntree=500, mtry=4"
+with_McConnell_Mokhtarani_Fernandez,0.9406,"RF, 25 vars, ntree=1200, mtry=10"
+Zhang_Wang_Wang-,0.9406,"RF, all vars,ntree=500, mtry=6"
+Norris_Sangmo,0.939,"RF, all vars, ntree=200, mtry=3"
+FryeZhou,0.9326,"Ensemble method of RF,k-nn,DT"
+BlelochJohnsonJhunjhunwala,0.9262,Logistic with threshold of 0.5
+Chung_Cha_Chang_Yoon,0.9117,"RF, gini_decrease>7"
+ArellanoBellUeoka,0.825,"RF, 10 vars, ntree=500, mtry=5"
+MaximEmily,0.2071,"RF, all vars, ntree=650, mtry=7"
