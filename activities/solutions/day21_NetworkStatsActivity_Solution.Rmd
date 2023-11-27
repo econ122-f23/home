@@ -1,0 +1,134 @@
+---
+title: "Network Stats Activity - Solution" 
+author: "ECON 122" 
+output: github_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE)
+```
+
+```{r packageCheck, include=FALSE}
+# run the update below in the console if you get an error with str_view
+# update.packages(oldPkgs = "stringr", ask=FALSE, repos = "http://cran.us.r-project.org")
+mypacks <- c("ggplot2","dplyr","readr","tidyr","statnet","circlize","ggnetwork")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+## Country Migration
+
+Let's use the same dataset from the previous activity that contains migration counts for decades between 1960 and 2000 between the origin (`origincode`) and destination (`destcode`) countries given in the data. We create a subsetted version of this data that only contains migration counts of females over 1000 in 2000.
+
+```{r}
+MigrationFlows <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/MigrationFlows.csv")
+MigrationFlowsF <- MigrationFlows %>% 
+   filter(sex == "Female", Y2000>1000) %>% 
+   select(origincode, destcode, Y2000)
+migration <- network(select(MigrationFlowsF,origincode,destcode), matrix.type="edgelist")
+```
+
+#### Question 1
+Compute the betweenness measure for your migration network using the `sna` package command `betweenness(network, gmode="digraph")` (since you have a directed graph). Save the results in a vector then look at numerical and graphical summaries of the betweenness measure. Which 10 countries have the highest measure of betweenness?
+
+- **Hint:** Creating a dataframe of vertex names and betweeness can help with figuring out the top 10. 
+
+#### *Answer:*
+Here we save our betweenness measure is a vector `btw`, the order of which matches the order of our vertex names.
+```{r}
+btw <- betweenness(migration, gmode="digraph") 
+head(btw)
+vnames <- migration %v% "vertex.names"
+head(vnames)
+```
+So `AFG` has a betweeness measure of 102.82, `AGO` 478.53, and so on. The histogram and summary stats reveal a few countries with very large betweenness values. 
+```{r}
+summary(btw)
+hist(btw) 
+```
+
+The countries with the 10 largest values are listed below and for the most part make sense. 
+```{r}
+data.frame(names=vnames,btw=btw) %>% arrange(desc(btw)) %>% head(10)
+```
+
+
+#### Question 2 
+
+Create a subgraph from the previous activity using the following smaller subset of countries. Draw a plot of this network with vertex labels added. (You can use your code from the previous activity)
+```{r}
+smallerGroup <- c("USA","CAN","MEX","BRA","CHN","JPN","GBR","PRT")
+```
+
+
+#### *Answer:*
+```{r}
+MigrationFlowsF_small <- filter(MigrationFlowsF,origincode %in% smallerGroup, destcode %in% smallerGroup)
+mynet_small <- network(MigrationFlowsF_small[,1:2], matrix.type="edgelist")
+
+# ggplot option
+set.seed(6)
+ggplot(data = ggnetwork(mynet_small,arrow.gap=.04), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges(arrow=arrow(length=unit(6,"pt"), type="closed"),curvature = 0.20) + 
+  geom_nodes() + 
+  theme_blank() + 
+  geom_nodelabel(aes(label=vertex.names)) 
+```
+
+#### Question 3
+Modify your plot so that node size is a function of `degree`. Use the `size` option in `geom_nodes`. What can you learn from this modified plot? 
+
+#### *Answer:*
+The figure scales each node for how many edges they have connected to them. We see that USA and GBR have high levels of degree while PRT and MEX have much smaller levels. 
+
+```{r, echo=FALSE}
+
+degree <- sna::degree(mynet_small, gmode="digraph") 
+set.vertex.attribute(mynet_small, "degree", degree)
+
+set.seed(6)
+ggplot(data = ggnetwork(mynet_small,arrow.gap=.04), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges(arrow=arrow(length=unit(6,"pt"), type="closed"),curvature = 0.20) + 
+  geom_nodes(aes(size=degree), color="darkred") + 
+  theme_blank() + 
+  geom_nodelabel_repel(aes(label=vertex.names)) 
+
+```
+
+#### Question 4
+Repeat Q3 but use `betweenness` instead of `degree`. What differences do you notice? Do they make sense intuitively? 
+
+#### *Answer:*
+The figure below scales each node by `betweenness`. While there is cetainly a correlation with degree some nodes do differ. For example, BRA and CAN have a degree measure but BRA has a higher betweenness measure. Therefore, while both countries have the same amount of edges connected to it, BRA appears to be a more important node for which migration flows through. Similarly, while JPN has a degree of 6, it has a betweenness of 0 which means none of the shortest routes between nodes pass through JPN. 
+
+```{r, echo=FALSE}
+
+betweenness <- sna::betweenness(mynet_small, gmode="digraph") 
+set.vertex.attribute(mynet_small, "betweenness", betweenness)
+
+set.seed(6)
+ggplot(data = ggnetwork(mynet_small,arrow.gap=.04), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges(arrow=arrow(length=unit(6,"pt"), type="closed"),curvature = 0.20) + 
+  geom_nodes(aes(size=betweenness), color="darkred") + 
+  theme_blank() + 
+  geom_nodelabel_repel(aes(label=vertex.names)) 
+
+```
+
+#### Question 5
+Compute the density, transitivity (clustering), and diameter values for this network. What do they tell you about its structure?
+How do you think the numbers would vary if we looked at only countries in South America? 
+
+#### *Answer:*
+The density of this network is about 57%, transitivity is about 66% and diameter 3. Just over 1/2 of all possible two-way migration connections are observed and about 2/3 of possible triads are observed. Given that these nodes cover a disperse geographical area, the numbers aren't too surprising.
+
+If we looked at countries only in South America, we would probably get higher density and transitivity numbers. When analyzing just that sub-region, it's likely that each country has strong connections with other countries within the region. 
+
+```{r}
+gden(mynet_small)  # density
+gtrans(mynet_small) # transitivity
+max(geodist(mynet_small)$gdist) # diameter
+```
