@@ -268,7 +268,7 @@ ggplot(degree_df, aes(x=name, y=degree)) +
 
 ## Comparing betweenness {.build}
 
-- Facebooks have a few people with extreme betweenness
+- Imminent has the most extreme betweenness
 ```{r, echo=FALSE}
 degree_fn <- function(net)
 {  
@@ -299,59 +299,6 @@ ggplot(data=ggnetwork(facebookImm_Aug), aes(x = x, y = y, xend = xend, yend = ye
   ggtitle("Imminent Brewery: Facebook post likers (August 2017)")
 ```
 
-## Comparing betweenness {.build}
-
-```{r, echo=FALSE}
-ggplot(data_frame(sex = facebook %v% "sex", between = betweenness(facebook, gmode="graph"))) + 
-  geom_boxplot(aes(x=sex, y=between)) + 
-  scale_y_sqrt() + 
-  ggtitle("facebook: betweenness by sex")
-```
-
-
-## Comparing closeness {.build}
-
-- The Facebook network nodes have low closeness, but similar values for all nodes
-- Simpsons and Imminent have higher closeness, with two Simpson's outliers 
-```{r, echo=FALSE}
-degree_fn <- function(net)
-{  
-  # sna closeness doesn't work for facebook network
-  # don't have a good explanation why it doesn't
-  d <- igraph::closeness(asIgraph(net), normalized=TRUE)
-  data_frame(closeness = d)
-}
-degrees <- lapply(list(facebook, Simpsons, facebookImm_Aug), degree_fn)
-degrees[[1]]$name <- "facebook"
-degrees[[2]]$name <- "Simpsons"
-degrees[[3]]$name <- "Imminent"
-
-degree_df <- bind_rows(degrees)
-ggplot(degree_df, aes(x=name, y=closeness)) + 
-  geom_boxplot()+ 
-  ggtitle("Closeness distribution")
-```
-
-## Comparing closeness {.build}
-
-- Why is closeness so different? 
-
-```{r, echo=FALSE, fig.height=5, fig.width=10, cache=TRUE}
-set.vertex.attribute(facebookImm_Aug, "closeness", closeness(facebookImm_Aug, gmode="graph") )
-face_cl <- igraph::closeness(asIgraph(facebook), normalized=TRUE)
-set.vertex.attribute(facebook, "closeness", face_cl)
-g1<- ggplot(data=ggnetwork(facebookImm_Aug), aes(x = x, y = y, xend = xend, yend = yend)) + 
-  geom_edges(color="black", size=.4) + 
-  geom_nodes(aes(size=closeness), color="darkred") + 
-  theme_blank() + coord_fixed() +
-  ggtitle("Imminent Brewery: Facebook post likers (August 2017)")
-g2 <- ggplot(data=ggnetwork(facebook), aes(x = x, y = y, xend = xend, yend = yend)) + 
-  geom_edges(color="black", size=.4) + 
-  geom_nodes(aes(size=closeness), color="darkred") + 
-  theme_blank() + coord_fixed() +
-  ggtitle("facebook friends")
-grid.arrange(g1,g2, ncol=2)
-```
 
 
 ## Network level statistics {.build}
