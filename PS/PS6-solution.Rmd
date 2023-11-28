@@ -1,0 +1,169 @@
+---
+title: PS6 - solution
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE, fig.height = 4, fig.width = 7)
+```
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr","tidyr","readr","class","sparcl","GGally", "statnet","ggnetwork")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+Package versions
+```{r}
+mypacks
+lapply(mypacks, packageVersion)
+```
+
+
+
+### Problem 1
+
+Review the colleges clustering example from day 22. Use this data to answer the following questions. Filter the data to only include schools in `MN`, `MA` and `CA`.
+
+**1.** Do a hierarchical clustering using the standardized versions of variables `SATM`, `Tuition`, `NumFaculty` and `GradRate`. Show the basic dedrogram (non-colored) for this clustering. How many clusters will be formed if we cut the tree at a height of 4? **Note:** increase the figure height in your markdown document so you can see the tree better. 
+
+#### *Answer:*
+If the tree is cut at a height of 4, then 5 clusters will be created.
+```{r, fig.height=6,fig.width=9}
+colleges <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/Colleges.csv")
+names(colleges)
+colleges2 <- colleges %>% filter(State %in% c("MN","MA","CA"))
+coll_vars <- c("SATM","Tuition","NumFaculty","GradRate")
+coll_vars
+d <- dist(scale(colleges2[,coll_vars]))
+coll_hc <- hclust(d)
+plot(coll_hc, labels = colleges2$College)
+abline(h=4)
+```
+
+**2.** Which school is most dissimilar from other schools with respect to these variables? What school is least dissimilar (i.e most similar!) to Scripps College with respect to these variables? Explain your answers.
+
+#### *Answer:*
+The UMN Twin Cities is most different from other schools when looking at these variables, especially with respect to number of faculty which at 1538 is about 4.5 SD's above the overall average. Pitzer college is most similar to Scripps. They both have SATM scores of 590, faculty numbers of 54 and grad rates of 73%. Their tuition amounts differ by less than 0.1 of a SD. 
+
+```{r}
+colleges2 %>%
+  filter(College %in% c("University of Minnesota Twin Cit", "Scripps College","Pitzer College")) %>% 
+  select(College, SATM, Tuition, NumFaculty, GradRate)
+colleges2 %>%
+  select(College, SATM, Tuition, NumFaculty, GradRate) %>%
+  mutate_at(2:5,scale) %>%
+  filter(College %in% c("University of Minnesota Twin Cit", "Scripps College","Pitzer College")) 
+```
+
+**3.** Cut the tree to produce 5 clusters. Then produce a colored dendrogram that uses color to distinguish between clusters. How many schools are in each cluster? 
+
+#### *Answer:*
+The smallest cluster contains the most different school, UMN Twin Cities, and the second smallest only contains 2 schools (MIT and USC). Two mid-sized clusters have 8 and 10 schools (a mostly liberal arts group and mostly smaller state schools). The largest cluster has 30 schools.
+```{r, fig.height=6,fig.width=9}
+hc_clusters <- cutree(coll_hc, k=5)
+colleges2 <- colleges2 %>%
+  mutate(cluster_hc5 = as.character(hc_clusters))
+ColorDendrogram(coll_hc, y=colleges2$cluster_hc5, labels=colleges2$College, branchlength = 1.6)
+table(colleges2$cluster_hc5)
+```
+
+**4.** Describe the schools in each cluster with respect to the variables we used to form the clusters. For example, what are some sample statistics of our variables in each cluster? How would you explain those clusters to prospective college students? 
+
+#### *Answer:*
+
+- The single school cluster, UMN-TC, is on its own because it is an outlier in terms of number of faculty. 
+- The two school cluster (#4) have the next highest number of faculty and high tuition.
+- The "selective LA" 8 school cluster (#1) have high SATM, tuition, and grad rates and low number of faculty. 
+- The 10 school group (#3) are a little more diverse than the 8 school group, but they seem to have measurements in the lower half of schools.
+- The largest group (#2) tend to have lower faculty numbers and higher tuition (like the LA cluster), but lower SATM and a wide range in grad rates. 
+
+```{r }
+colleges2 %>% 
+  select(cluster_hc5, SATM, Tuition, NumFaculty, GradRate) %>%
+  gather(key=variable, value=value, SATM:GradRate) %>%
+  ggplot(aes(y=value, x=cluster_hc5)) + geom_boxplot() + facet_wrap(~variable, scales="free") 
+colleges2 %>% select(SATM, Tuition, NumFaculty, GradRate)  %>% summarize_all(median)
+colleges2 %>% select(cluster_hc5, SATM, Tuition, NumFaculty, GradRate) %>%group_by(cluster_hc5) %>% summarize_all(median)
+```
+
+#### Problem 2
+
+The file below is an edgelist for an undirected network of dolphins. An edge between a pair of dolphins indicates that the pair has "frequent associations". (Data was collected by D. Lusseau, K. Schneider, O. J. Boisseau, P. Haase, E. Slooten, and S. M. Dawson for  *Behavioral Ecology and Sociobiology* 54, 396-405 (2003))
+
+```{r, eval=TRUE}
+dolphins <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/soc-dolphins.csv")
+```
+
+**1.** Create a network object using this edgelist. Include the argument `directed=FALSE` to get an undirected network. How many nodes are in this network? How many edges?
+
+#### Answer:
+There are 62 nodes (dolphins) and 159 edges. Here are two ways to create this network using either `network` or `igraph` packages.
+
+```{r network package data}
+dol.net <- network(dolphins, matrix.type="edgelist", directed=FALSE)
+dol.net
+```
+
+```{r igraph package data}
+dol.neti <- igraph::graph_from_data_frame(dolphins, directed=FALSE) 
+dol.neti
+igraph::ecount(dol.neti)
+igraph::vcount(dol.neti)
+```
+
+**2.** Use `ggplot` and `ggnetwork` to plot this network. 
+
+#### Answer:
+Using either type of graph object:
+
+```{r}
+set.seed(10)
+ggplot(data=ggnetwork(dol.net), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges() + 
+  geom_nodes(size=3, color="darkred") +
+  theme_blank() + coord_fixed() 
+```
+
+
+**3.** Compute the `degree` of each node and plot your network with node size determined by degree. Are there any unusually high cases of degree?
+
+#### Answer:
+There don't seem to be any abnormally large cases with high degree, there are quite a few in the 9-12 range. (A boxplot of degree also shows that the degree distribution isn't overly right skewed.)
+
+```{r sna package degree}
+set.seed(10)
+degree <- sna::degree(dol.net, gmode = "graph")
+set.vertex.attribute(dol.net, "degree", degree)
+ggplot(data=ggnetwork(dol.net), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges() + 
+  geom_nodes(aes(size=degree), color="darkred") +
+  theme_blank() + coord_fixed() 
+```
+
+```{r igraph package degree}
+igraph::V(dol.neti)$degree <- igraph::degree(dol.neti)
+# same graphing command as above
+```
+
+**4.** Repeat part 3 for `betweenness`. 
+
+#### Answer:
+There are two cases that have very large betweenness values compared to other cases. 
+
+```{r sna package between}
+set.seed(10)
+between <- sna::betweenness(dol.net, gmode = "graph")
+set.vertex.attribute(dol.net, "between", between)
+ggplot(data=ggnetwork(dol.net), aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges() + 
+  geom_nodes(aes(size=between), color="darkred") +
+  theme_blank() + coord_fixed() 
+boxplot(between, main="betweenness stats")
+```
+
+```{r igraph package between}
+igraph::V(dol.neti)$between <- igraph::betweenness(dol.neti)
+# same graphing command as above
+```
