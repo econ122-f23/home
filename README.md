@@ -310,7 +310,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
 -  Sleep
 
 ------------------------------------------------------------------------
-### <a name="currentweek"></a>Week 14 (11/27)
+### Week 14 (11/27)
 
 **Monday** (Networks Statistics)
 -   before class:
@@ -329,11 +329,11 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
     -   study for exam 2
     -   bring a calculator
 -   in class:
-    -   take [exam 2]
+    -   take [exam 2](MT2_scores.md)
     
 ------------------------------------------------------------------------  
 
-### Week 15 (12/04)
+### <a name="currentweek"></a>Week 15 (12/04)
 
 **Monday** (Networks Activity)
 -   before class 
