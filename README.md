@@ -41,7 +41,7 @@ Textbook 2: [An Introduction to Statistical Learning](https://link.springer.com/
 - [Team Project 2](https://classroom.github.com/a/I0xMnmkh) (due **11/20**) [[Description]](https://github.com/econ122-f23/teamproject2)
 - [Problem Set 6](https://classroom.github.com/a/AmBx7PPT) (due **11/27**)
   - Solutions [.Rmd](PS/PS6-solution.Rmd) [.md](PS/PS6-solution.md)
-- [Final Project]() (due **12/15**) [[Description]](FinalProject.md)
+- [Final Project](https://classroom.github.com/a/D__hUe4l) (due **12/15**) [[Description]](FinalProject.md)
 
 ------------------------------------------------------------------------
 ### Week 1 (08/28)
