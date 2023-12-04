@@ -3183,12 +3183,13 @@ ul.task-list{list-style: none;}
 
 <ul class = 'build'>
 <li>Sometimes it’s important to factor in how &ldquo;important&rdquo; these friends are</li>
-<li>Being friends with a lot of social, political, financial influence can matter</li>
+<li>Being friends with those with a lot of social, political, financial influence can matter</li>
 </ul></li>
 <li>Weighted degree centrality with a feedback loop</li>
 <li>A vertex gets a boost for being connected to <strong>important vertices</strong> \[
-x_i=\sum_{j \in V} w_{ji}x_j
+x_i=\sum_{j \in V} a_{ji}x_j
 \]</li>
+<li>\(a_{ji}\) is 1 if \(i\) and \(j\) are connected. Without \(x_j\) it’s just degree</li>
 <li>This leads to a linear system which can be solved by linear algebra to backout the \(x_i\) values \[
 Ax_i=\lambda x_i
 \]</li>
@@ -3199,7 +3200,7 @@ Ax_i=\lambda x_i
 <ul class = 'build'>
 <li>Algorithm behind Google search engine</li>
 <li>Modified version of eigenvector centrality \[
-y_i = \alpha \sum_{j \in V}\frac{w_{ji}}{k_j}y_j + \beta
+y_i = \alpha \sum_{j \in V}a_{ji}\frac{y_j}{k_j} + \beta
 \]</li>
 <li>Inherent importance \(\beta\) and importance acquired from neighbors (\(\alpha\) term)</li>
 <li>Importance of neighbor is spread equally among direct connections</li>
@@ -3215,12 +3216,12 @@ y_i = \alpha \sum_{j \in V}\frac{w_{ji}}{k_j}y_j + \beta
 
 <ul class = 'build'>
 <li>Modularity is a useful concept for detecting sub-networks or communities</li>
-<li>Does our &ldquo;community&rdquo; have more weighted edges relative to a randomly assigned network with similar properties?</li>
+<li>Does our &ldquo;community&rdquo; have more connections relative to a randomly assigned network with <strong>similar properties</strong>?</li>
 <li>What properties should we control for?</li>
-<li>The <strong>weighted degree</strong> of a vertex is \(k_i= \sum_{j \in V}w_{ij}\) where \(w_{ij}\) is the weight of the edge between vertices \(i\) and \(j\)
+<li>The <strong>degree</strong> of a vertex is \(k_i= \sum_{j \in V}a_{ij}\)
 
 <ul class = 'build'>
-<li>important because the chance of an edge is higher if a vertex is more connected</li>
+<li>Any community is likely to have more connections if there are more vertices</li>
 </ul></li>
 <li>In a randomly rewired network, the expected number of edges between \(i\) and \(j\) is \(\frac{k_i k_j}{2m}\) where \(m\) is the total number of edges in the network</li>
 </ul>
@@ -3229,20 +3230,24 @@ y_i = \alpha \sum_{j \in V}\frac{w_{ji}}{k_j}y_j + \beta
 
 <ul class = 'build'>
 <li><p>Summing over all vertices in a community \(C\), we have \[
-\sum_{i,j \in C} \left(w_{ij}-\frac{k_ij_j}{2m}\right) \geq 0
+\sum_{i,j \in C} \left(a_{ij}-\frac{k_ij_j}{2m}\right) \geq 0
 \]</p></li>
 <li><p>If \(C\) is not a community then this quantity may be negative</p></li>
 <li><p>The <strong>modularity</strong> \(Q\) is then</p></li>
 </ul>
 
 <p>\[
-Q = \frac{1}{2m} \sum_{k=1}^l \sum_{i,j \in C_k} \left(w_{ij}-\frac{k_ik_j}{2m}\right)
+Q = \frac{1}{2m} \sum_{k=1}^l \sum_{i,j \in C_k} \left(a_{ij}-\frac{k_ik_j}{2m}\right)
 \] - Notice \(Q\) is normalized by \(2m\) so that it is between <strong>-1 and 1</strong></p>
 
 </article></slide><slide class=""><hgroup><h2>Modularity</h2></hgroup><article  id="modularity-2" class="build">
 
 <ul class = 'build'>
-<li>Our goal is to partition the vertices into communites to maximize \(Q\)</li>
+<li>Our goal is to partition the vertices into communities to maximize \(Q\)
+
+<ul class = 'build'>
+<li>Idea is similar to k-means clustering</li>
+</ul></li>
 <li>Since this is computationally intensive, we use a fast approx. algorithm called the <code>Louvain method</code>
 
 <ul class = 'build'>

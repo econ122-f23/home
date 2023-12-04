@@ -57,12 +57,13 @@ lapply(mypacks, library, character.only=TRUE)  # load all packages
 
 - Degree centrality tells us how many "friends" we have
     - Sometimes it's important to factor in how "important" these friends are
-    - Being friends with a lot of social, political, financial influence can matter
+    - Being friends with those with a lot of social, political, financial influence can matter
 - Weighted degree centrality with a feedback loop
 - A vertex gets a boost for being connected to **important vertices**
 $$
-x_i=\sum_{j \in V} w_{ji}x_j
+x_i=\sum_{j \in V} a_{ji}x_j
 $$
+- $a_{ji}$ is 1 if $i$ and $j$ are connected. Without $x_j$ it's just degree
 - This leads to a linear system which can be solved by linear algebra to backout the $x_i$ values
 $$
 Ax_i=\lambda x_i
@@ -73,7 +74,7 @@ $$
 - Algorithm behind Google search engine
 - Modified version of eigenvector centrality 
 $$
-y_i = \alpha \sum_{j \in V}\frac{w_{ji}}{k_j}y_j + \beta
+y_i = \alpha \sum_{j \in V}a_{ji}\frac{y_j}{k_j} + \beta
 $$
 - Inherent importance $\beta$ and importance acquired from neighbors ($\alpha$ term)
 - Importance of neighbor is spread equally among direct connections 
@@ -84,30 +85,31 @@ $$
 ## Modularity {.build}
 
 - Modularity is a useful concept for detecting sub-networks or communities
-- Does our "community" have more weighted edges relative to a randomly assigned network with similar properties?
+- Does our "community" have more connections relative to a randomly assigned network with **similar properties**?
 - What properties should we control for?
-- The **weighted degree** of a vertex is $k_i= \sum_{j \in V}w_{ij}$ where $w_{ij}$ is the weight of the edge between vertices $i$ and $j$
-    -  important because the chance of an edge is higher if a vertex is more connected
+- The **degree** of a vertex is $k_i= \sum_{j \in V}a_{ij}$ 
+    - Any community is likely to have more connections if there are more vertices 
 - In a randomly rewired network,  the expected number of edges between $i$ and $j$ is $\frac{k_i k_j}{2m}$ where $m$ is the total number of edges in the network
 
 ## Modularity {.build}
 
 - Summing over all vertices in a community $C$, we have
 $$
-\sum_{i,j \in C} \left(w_{ij}-\frac{k_ij_j}{2m}\right) \geq 0
+\sum_{i,j \in C} \left(a_{ij}-\frac{k_ij_j}{2m}\right) \geq 0
 $$
 - If $C$ is not a community then this quantity may be negative
 
 - The **modularity** $Q$ is then 
 
 $$
-Q = \frac{1}{2m} \sum_{k=1}^l \sum_{i,j \in C_k} \left(w_{ij}-\frac{k_ik_j}{2m}\right)
+Q = \frac{1}{2m} \sum_{k=1}^l \sum_{i,j \in C_k} \left(a_{ij}-\frac{k_ik_j}{2m}\right)
 $$
 - Notice $Q$ is normalized by $2m$ so that it is between **-1 and 1**
 
 ## Modularity {.build}
 
-- Our goal is to partition the vertices into communites to maximize $Q$
+- Our goal is to partition the vertices into communities to maximize $Q$
+     - Idea is similar to k-means clustering
 - Since this is computationally intensive, we use a fast approx. algorithm called the `Louvain method`
     - Similar to heirarchical clustering methods
 - What is a "high" modularity? It depends on the network structure so we always should compare to a random network (see activity)
